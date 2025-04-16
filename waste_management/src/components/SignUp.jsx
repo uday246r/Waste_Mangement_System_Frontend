@@ -38,9 +38,14 @@ const SignUp = () => {
       const res = await axios.post(`${BASE_URL}/signup`, signFormData, {
         withCredentials: true,
       });
-
-      dispatch(addUser(res.data)); // Assuming you want to store the user data in Redux
-      navigate("/"); // Redirect to the feed page after successful signup
+      const userData = {
+        firstName: signFormData.firstName,
+        photoUrl: signFormData.photoUrl,
+        ...res.data, // preserve any other data from backend
+      };
+  
+      dispatch(addUser(userData));
+        return navigate("/"); // Redirect to the feed page after successful signup
     } catch (error) {
       console.error("Signup failed:", error.response?.data || error.message);
       alert("Signup failed. Please try again.");
@@ -159,7 +164,7 @@ const SignUp = () => {
               />
             </label>
 
-            <label className="form-control w-full max-w-xs my-2">
+            {/* <label className="form-control w-full max-w-xs my-2">
               <div className="label">
                 <span className="label-text">Gender</span>
               </div>
@@ -216,7 +221,7 @@ const SignUp = () => {
                 className="input input-bordered w-full max-w-xs"
                 required
               />
-            </label>
+            </label> */}
 
             <label className="form-control w-full max-w-xs my-2">
               <div className="label">
@@ -231,7 +236,7 @@ const SignUp = () => {
                 className="input input-bordered w-full max-w-xs"
                 required
               />
-            </label>
+            </label> 
 
             <div className="card-actions justify-center mt-4">
               <button type="submit" className="btn btn-primary">

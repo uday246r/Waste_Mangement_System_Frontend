@@ -18,7 +18,7 @@ const NavBar = () => {
         { withCredentials: true}
       );
       dispatch(removeUser());
-      return Navigate("/login");
+      return Navigate("/signup");
     }
     catch(err){
       //Err logic may be redirect to error page
