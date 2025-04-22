@@ -1,33 +1,34 @@
 import React from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+import { BASE_URL } from "../utils/constants";
 import axios from 'axios';
-import { removeUser } from "../utils/userSlice";
-import { BASE_URL} from "../utils/constants";
+import { removeUser } from '../utils/userSlice';
 
 const NavBar = () => {
   const user = useSelector(store=> store.user);
   const dispatch = useDispatch();
   const Navigate = useNavigate();
 
-  const handleLogOut = async() =>{
+  const handleLogOut = async() => {
     try{
       await axios.post(
         BASE_URL + "/logout",
         {},
-        { withCredentials: true}
+        { withCredentials: true }
       );
       dispatch(removeUser());
-      return Navigate("/signup");
+      return Navigate("/login");
     }
     catch(err){
       //Err logic may be redirect to error page
+      
     }
   };
   return (
              <div className="navbar bg-base-300 shadow-sm">
   <div className="flex-1">
-    <Link to="/" className="btn btn-ghost text-xl">Waste Management Support System</Link>
+    <Link to="/" className="btn btn-ghost text-xl">DevTinder</Link>
   </div>
   <div className="flex-none gap-2">
    {user && (
@@ -49,8 +50,21 @@ const NavBar = () => {
             <span className="badge">New</span>
           </Link>
         </li>
-        <li><a>Schedule PickUp</a></li>
-        <li><a>Settings</a></li>
+        <li>
+          <Link to="/videos">
+          DIY Videos
+          </Link>
+          </li>
+        <li>
+          <Link to="/connections">
+          Connections
+          </Link>
+          </li>
+          <li>
+          <Link to="/requests">
+          Requests
+          </Link>
+          </li>
         <li><a onClick={handleLogOut}>Logout</a></li>
       </ul>
     </div>
