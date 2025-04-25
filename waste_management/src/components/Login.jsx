@@ -70,7 +70,7 @@ const Login = () => {
                                         type="text"
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                        className="w-full px-4 py-2 border border-gray-300 text-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                                     />
                                 </div>
                                 <div>
@@ -81,7 +81,7 @@ const Login = () => {
                                         type="text"
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                        className="w-full px-4 py-2 border border-gray-300 text-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                                     />
                                 </div>
                             </>
@@ -96,7 +96,7 @@ const Login = () => {
                                 value={emailId}
                                 onChange={(e) => setEmailId(e.target.value)}
                                 placeholder="Enter your email"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                className="w-full px-4 py-2 border border-gray-300 text-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                             />
                         </div>
                         
@@ -109,7 +109,7 @@ const Login = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="Enter your password"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-green-800 placeholder-gray-400"
+                                className="w-full px-4 py-2 border border-gray-300 text-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-green-800 placeholder-gray-400"
                             />
                         </div>
                         
