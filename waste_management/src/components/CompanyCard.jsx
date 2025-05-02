@@ -7,6 +7,7 @@ const CompanyCard = ({ company }) => {
     price,
     wasteType,
     location,
+    about,
     email,
   } = company;
 
@@ -58,6 +59,12 @@ const CompanyCard = ({ company }) => {
           <h3 className="text-sm font-semibold text-emerald-700 uppercase tracking-wide">Location</h3>
           <p className="text-gray-700">{location || "Not specified"}</p>
         </div>
+
+        <div className="mb-3">
+          <h3 className="text-sm font-semibold text-emerald-700 uppercase tracking-wide">About</h3>
+          <p className="text-gray-700">{about || "Not specified"}</p>
+        </div>
+
       </div>
     </div>
   );

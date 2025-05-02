@@ -3,6 +3,7 @@ import axios from "axios";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { addUser } from "../utils/userSlice";
+import { addCompany } from "../utils/companySlice";
 import { BASE_URL } from "../utils/constants";
 
 const Login = () => {
@@ -16,6 +17,7 @@ const Login = () => {
     emailId: "",
     password: "",
     wasteType: "Plastic",
+    about: "",
     price: "",
     photoUrl: "",
   });
@@ -60,6 +62,7 @@ const Login = () => {
               password: formData.password,
               wasteType: formData.wasteType,
               price: formData.price,
+              about: formData.about,
               photoUrl: formData.photoUrl,
             };
 
@@ -67,8 +70,15 @@ const Login = () => {
         withCredentials: true,
       });
 
-      // Store user data along with role
-      dispatch(addUser({ ...(res.data.data || res.data), role }));
+      const responseData = res.data;
+
+     
+    // Dispatch separately based on role
+    if (role === "user") {
+        dispatch(addUser({ ...responseData, role: "user" }))
+      } else {
+        dispatch(addCompany({ ...responseData, role: "company" }))
+      }
 
       // Navigate to shared profile page
       navigate("/profile");
@@ -125,7 +135,7 @@ const Login = () => {
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  placeholder=""
+                  placeholder="Enter your First Name"
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
                 />
               </div>
@@ -135,7 +145,7 @@ const Login = () => {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  placeholder=""
+                  placeholder="Enter your Last Name"
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
                 />
               </div>
@@ -150,7 +160,7 @@ const Login = () => {
                   name="companyName"
                   value={formData.companyName}
                   onChange={handleInputChange}
-                  placeholder="EcoRecycle Inc."
+                  placeholder="Enter Company Name"
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
                 />
               </div>
@@ -188,6 +198,17 @@ const Login = () => {
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">About</label>
+                <textarea
+                  name="about"
+                  value={formData.about}
+                  onChange={handleInputChange}
+                  placeholder="Tell us about you"
+                  type="number"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+                ></textarea>
+              </div>
             </>
           )}
 
@@ -198,7 +219,7 @@ const Login = () => {
               name="emailId"
               value={formData.emailId}
               onChange={handleInputChange}
-              placeholder="your@email.com"
+              placeholder="Enter your Email"
               type="email"
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
             />
@@ -209,7 +230,7 @@ const Login = () => {
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              placeholder="••••••••"
+              placeholder="Enter your Password"
               type="password"
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
             />
@@ -236,7 +257,7 @@ const Login = () => {
             className="text-sm text-gray-600 hover:text-teal-600 cursor-pointer inline-block border-b border-dashed border-gray-400 pb-0.5 transition"
           >
             {isLoginForm
-              ? "New here? Create an account"
+              ? "New Here? Create an account"
               : "Already have an account? Log in"}
           </p>
         </div>

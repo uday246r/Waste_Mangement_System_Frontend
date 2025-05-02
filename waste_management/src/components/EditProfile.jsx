@@ -3,17 +3,21 @@ import axios from "axios";
 import { BASE_URL } from "../utils/constants";
 import { useDispatch, useSelector } from "react-redux";
 import { addUser } from "../utils/userSlice";
+import { addCompany } from "../utils/companySlice"; // Ensure you import addCompany here
 import UserCard from "./UserCard";
 import CompanyCard from "./CompanyCard";
 
 const Profile = () => {
   const dispatch = useDispatch();
   const userData = useSelector((state) => state.user);
+  const companyData = useSelector((state) => state.company);
   const [profileData, setProfileData] = useState(null);
   const [formData, setFormData] = useState({});
   const [error, setError] = useState("");
   const [showToast, setShowToast] = useState(false);
-  const isCompany = userData?.companyName !== undefined;
+
+  // Determine if the profile belongs to a company or a user
+  const isCompany = companyData?.companyName !== undefined;
 
   const fetchProfile = async () => {
     try {
@@ -23,6 +27,7 @@ const Profile = () => {
           withCredentials: true,
         }
       );
+      console.log(res.data);
       setProfileData(res.data);
       setFormData(res.data);
     } catch (err) {
@@ -33,6 +38,16 @@ const Profile = () => {
   useEffect(() => {
     fetchProfile();
   }, []);
+  
+  useEffect(() => {
+    if (isCompany && companyData) {
+      setProfileData(companyData);
+      setFormData(companyData);
+    } else if (!isCompany && userData) {
+      setProfileData(userData);
+      setFormData(userData);
+    }
+  }, [isCompany, userData, companyData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -43,9 +58,13 @@ const Profile = () => {
     const allowedFields = [
       "firstName",
       "lastName",
+      "companyName",
       "emailId",
+      "price",
       "photoUrl",
       "gender",
+      "wasteType",
+      "location",
       "age",
       "about",
       "skills",
@@ -60,7 +79,12 @@ const Profile = () => {
         { withCredentials: true }
       );
 
-      dispatch(addUser(res.data.data));
+      if (isCompany) {
+        dispatch(addCompany(res.data.data)); // Save company data
+      } else {
+        dispatch(addUser(res.data.data)); // Save user data
+      }
+
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (err) {
@@ -140,6 +164,16 @@ const Profile = () => {
                       <option value="Organic">Organic</option>
                       <option value="Metal">Metal</option>
                     </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">About</label>
+                    <textarea
+                      name="about"
+                      value={formData.about || ""}
+                      onChange={handleChange}
+                      placeholder="Tell us about you"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
@@ -257,9 +291,9 @@ const Profile = () => {
         <div className="fixed top-4 inset-x-0 flex justify-center items-start z-50">
           <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-lg flex items-center space-x-3 max-w-md transition-all duration-300 ease-in-out transform animate-fade-in-down">
             <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l5-5z" clipRule="evenodd"></path>
             </svg>
-            <p className="font-medium">Profile updated successfully!</p>
+            <p className="text-sm font-medium">Profile updated successfully!</p>
           </div>
         </div>
       )}

@@ -34,6 +34,11 @@ const CompanyProfile = () => {
           </div>
 
           <div>
+            <p className="text-gray-500">About:</p>
+            <p className="text-lg font-medium">₹{company.about}</p>
+          </div>
+
+          <div>
             <p className="text-gray-500">Price per KG:</p>
             <p className="text-lg font-medium">₹{company.price}</p>
           </div>
