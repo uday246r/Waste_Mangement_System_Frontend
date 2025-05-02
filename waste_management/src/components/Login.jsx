@@ -1,145 +1,248 @@
-import React from 'react'
-import { useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
-import { addUser } from "../utils/userSlice";
 import { useDispatch } from "react-redux";
-import { useNavigate } from 'react-router-dom';
-import { BASE_URL } from '../utils/constants';
+import { useNavigate } from "react-router-dom";
+import { addUser } from "../utils/userSlice";
+import { BASE_URL } from "../utils/constants";
 
 const Login = () => {
-    const [emailId, setEmailId] = useState("");
-    const [password, setPassword] = useState("");
-    const [firstName, setFirstName] = useState("");
-    const [lastName, setLastName] = useState("");
-    const [isLoginForm, setIsLoginForm] = useState(true);
+  const [role, setRole] = useState("user"); // "user" or "company"
+  const [isLoginForm, setIsLoginForm] = useState(true);
 
-    const [error, setError] = useState("");
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    companyName: "",
+    emailId: "",
+    password: "",
+    wasteType: "Plastic",
+    price: "",
+    photoUrl: "",
+  });
 
-    const handleLogin = async () => {
-        try{
-            const res = await axios.post(
-              BASE_URL + "/login",
-              {
-                emailId,
-                password,
-              }, 
-              {withCredentials: true}
-            );
-            dispatch(addUser(res.data));
-            return navigate("/");
-        } catch(err){
-            setError(err?.response?.data || "Something went wrong");
-        }
+  const [error, setError] = useState("");
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const endpoint =
+        role === "user"
+          ? `/auth/user/${isLoginForm ? "login" : "signup"}`
+          : `/auth/company/${isLoginForm ? "login" : "signup"}`;
+
+      const data =
+        role === "user"
+          ? isLoginForm
+            ? {
+                emailId: formData.emailId,
+                password: formData.password,
+              }
+            : {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                emailId: formData.emailId,
+                password: formData.password,
+              }
+          : isLoginForm
+          ? {
+              emailId: formData.emailId,
+              password: formData.password,
+            }
+          : {
+              companyName: formData.companyName,
+              emailId: formData.emailId,
+              password: formData.password,
+              wasteType: formData.wasteType,
+              price: formData.price,
+              photoUrl: formData.photoUrl,
+            };
+
+      const res = await axios.post(BASE_URL + endpoint, data, {
+        withCredentials: true,
+      });
+
+      // Store user data along with role
+      dispatch(addUser({ ...(res.data.data || res.data), role }));
+
+      // Navigate to shared profile page
+      navigate("/profile");
+    } catch (err) {
+      setError(err?.response?.data || "Something went wrong");
     }
+  };
 
-    const handleSignUp = async () => {
-        try{
-            const res = await axios.post(
-                BASE_URL + "/signup",
-                { firstName, lastName, emailId, password },
-                { withCredentials: true}
-            );
-            dispatch(addUser(res.data.data));
-            return navigate("/profile");
-        } catch(err){
-            setError(err?.response?.data || "Something went wrong");
-        }
-    };
-
-    return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-100 px-4 py-10">
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:shadow-xl w-full max-w-md">
-                {/* Color Strip at Top */}
-                <div className="h-2 bg-gradient-to-r from-teal-500 to-green-500"></div>
-                
-                <div className="p-8">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-                        {isLoginForm ? "Welcome Back" : "Join Our Community"}
-                    </h2>
-                    
-                    <form className="space-y-5">
-                        {!isLoginForm && (
-                            <>
-                                <div>
-                                    <label className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-green-800 placeholder-gray-400">
-                                        First Name
-                                    </label>
-                                    <input 
-                                        type="text"
-                                        value={firstName}
-                                        onChange={(e) => setFirstName(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 text-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-green-800 placeholder-gray-400">
-                                        Last Name
-                                    </label>
-                                    <input 
-                                        type="text"
-                                        value={lastName}
-                                        onChange={(e) => setLastName(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 text-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                    />
-                                </div>
-                            </>
-                        )}
-                        
-                        <div>
-                            <label className="block text-sm font-semibold text-teal-700 uppercase tracking-wider mb-2">
-                                Email
-                            </label>
-                            <input 
-                                type="email"
-                                value={emailId}
-                                onChange={(e) => setEmailId(e.target.value)}
-                                placeholder="Enter your email"
-                                className="w-full px-4 py-2 border border-gray-300 text-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                            />
-                        </div>
-                        
-                        <div>
-                            <label className="block text-sm font-semibold text-teal-700 uppercase tracking-wider mb-2">
-                                Password
-                            </label>
-                            <input 
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Enter your password"
-                                className="w-full px-4 py-2 border border-gray-300 text-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-green-800 placeholder-gray-400"
-                            />
-                        </div>
-                        
-                        {error && (
-                            <div className="text-red-500 text-sm py-1">{error}</div>
-                        )}
-                        
-                        <button 
-                            type="button"
-                            onClick={isLoginForm ? handleLogin : handleSignUp}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-teal-500 py-3 font-medium"
-                        >
-                            {isLoginForm ? "Login" : "Sign Up"}
-                        </button>
-                    </form>
-                    
-                    <div className="mt-6 text-center">
-                        <p 
-                            className="text-gray-600 hover:text-teal-600 cursor-pointer transition duration-300"
-                            onClick={() => setIsLoginForm((value) => !value)}
-                        >
-                            {isLoginForm 
-                                ? "New user? Create an account" 
-                                : "Already have an account? Login here"}
-                        </p>
-                    </div>
-                </div>
-            </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md bg-white shadow-lg rounded-xl p-8 border border-gray-100">
+        <div className="mb-8">
+          <h2 className="text-center text-3xl font-bold text-gray-800">
+            {isLoginForm ? "Welcome Back" : "Join Us"}
+          </h2>
+          <p className="text-center text-gray-500 mt-2">
+            {isLoginForm
+              ? "Log in to your account"
+              : "Create your account to get started"}
+          </p>
         </div>
-    );
-}
+
+        {/* Toggle Role */}
+        <div className="flex justify-center gap-4 mb-8 p-1 bg-gray-100 rounded-lg">
+          <button
+            className={`px-6 py-2 rounded-md font-medium transition duration-200 w-1/2 ${
+              role === "user"
+                ? "bg-teal-600 text-white shadow-md"
+                : "bg-transparent text-gray-600 hover:bg-gray-200"
+            }`}
+            onClick={() => setRole("user")}
+          >
+            User
+          </button>
+          <button
+            className={`px-6 py-2 rounded-md font-medium transition duration-200 w-1/2 ${
+              role === "company"
+                ? "bg-teal-600 text-white shadow-md"
+                : "bg-transparent text-gray-600 hover:bg-gray-200"
+            }`}
+            onClick={() => setRole("company")}
+          >
+            Company
+          </button>
+        </div>
+
+        <form className="space-y-5">
+          {/* Fields based on role + isLoginForm */}
+          {!isLoginForm && role === "user" && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                <input
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  placeholder=""
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                <input
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  placeholder=""
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+                />
+              </div>
+            </div>
+          )}
+
+          {!isLoginForm && role === "company" && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <input
+                  name="companyName"
+                  value={formData.companyName}
+                  onChange={handleInputChange}
+                  placeholder="EcoRecycle Inc."
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Logo URL</label>
+                <input
+                  name="photoUrl"
+                  value={formData.photoUrl}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com/logo.png"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Waste Type</label>
+                <select
+                  name="wasteType"
+                  value={formData.wasteType}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition bg-white text-gray-500"
+                >
+                  <option value="Plastic">Plastic</option>
+                  <option value="Organic">Organic</option>
+                  <option value="Metal">Metal</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Price per KG</label>
+                <input
+                  name="price"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                  type="number"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Common Fields */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              name="emailId"
+              value={formData.emailId}
+              onChange={handleInputChange}
+              placeholder="your@email.com"
+              type="email"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              placeholder="••••••••"
+              type="password"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+            />
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-medium transition duration-200 shadow-md transform hover:-translate-y-0.5"
+          >
+            {isLoginForm ? "Log In" : "Create Account"}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p
+            onClick={() => setIsLoginForm((prev) => !prev)}
+            className="text-sm text-gray-600 hover:text-teal-600 cursor-pointer inline-block border-b border-dashed border-gray-400 pb-0.5 transition"
+          >
+            {isLoginForm
+              ? "New here? Create an account"
+              : "Already have an account? Log in"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default Login;

@@ -12,25 +12,22 @@ import Requests from "./components/Requests";
 import Video from "./components/Video";
 
 function App() {
-
   return (
-    <>
     <Provider store={appStore}>
-    <BrowserRouter basename="/">
-    <Routes>
-      <Route path="/" element={<Body />} >
-      <Route path="/" element={<Feed />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/videos" element={<Video />} />
-      <Route path="/connections" element={<Connections />} />
-      <Route path="/requests" element={<Requests />} />
-      </Route>
-    </Routes>
-    </BrowserRouter>
+      <BrowserRouter basename="/">
+        <Routes>
+          <Route path="/" element={<Body />}>
+            <Route index element={<Feed />} />
+            <Route path="login" element={<Login />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="videos" element={<Video />} />
+            <Route path="connections" element={<Connections />} />
+            <Route path="requests" element={<Requests />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </Provider>
-    </>
-  )
+  );
 }
 
-export default App
+export default App;
