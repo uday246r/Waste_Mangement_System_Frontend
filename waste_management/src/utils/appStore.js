@@ -4,6 +4,7 @@ import  companyReducer  from "./companySlice";
 import feedReducer from "./feedSlice";
 import connectionReducer from "./connectionSlice";
 import requestReducer from "./requestSlice";
+import pickupReducer from './pickupSlice';
 
 const appStore = configureStore({
     reducer: {
@@ -12,6 +13,7 @@ const appStore = configureStore({
         feed: feedReducer,
         connections: connectionReducer,
         requests: requestReducer,
+        pickup: pickupReducer,
     },
 });
 

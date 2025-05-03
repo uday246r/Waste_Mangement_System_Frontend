@@ -9,6 +9,7 @@ import appStore from "./utils/appStore";
 import Feed from "./components/Feed";
 import Connections from "./components/connections";
 import Requests from "./components/Requests";
+import PickupRequests from "./components/PickupRequests";
 import Video from "./components/Video";
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
             <Route path="videos" element={<Video />} />
             <Route path="connections" element={<Connections />} />
             <Route path="requests" element={<Requests />} />
+            <Route path="pickuprequest" element={<PickupRequests />} />
           </Route>
         </Routes>
       </BrowserRouter>

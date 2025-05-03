@@ -71,10 +71,9 @@ const NavBar = () => {
                     <div className="px-4 py-3 border-b border-gray-100">
                       <p className="text-sm text-gray-500">Signed in as</p>
                       <p className="text-sm font-medium text-gray-800 truncate">
-                      {isUser 
+                        {isUser 
                           ? `${currentUser.firstName} ${currentUser.lastName}` 
-                          : currentUser.companyName
-                        }
+                          : currentUser.companyName}
                       </p>
                     </div>
 
@@ -104,12 +103,24 @@ const NavBar = () => {
                           <span className="text-sm text-gray-700">Connections</span>
                         </Link>
 
-                        <Link to="/requests" className="flex items-center px-4 py-3 hover:bg-gray-50">
+                        {/* Pickup Request for User */}
+                        {isUser && (
+                          <Link to="/pickuprequest" className="flex items-center px-4 py-3 hover:bg-gray-50">
+                            <svg className="h-5 w-5 text-gray-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                                d="M9 12h6m-3-3v6m8-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-sm text-gray-700">Pickup Request</span>
+                          </Link>
+                        )}
+
+                        {/* Pickup Requests for Companies / Requests for Users */}
+                        <Link to={isCompany ? "/pickuprequest" : "/requests"} className="flex items-center px-4 py-3 hover:bg-gray-50">
                           <svg className="h-5 w-5 text-gray-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
                               d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8m-5 5h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293h3.172a1 1 0 00.707-.293l2.414-2.414a1 1 0 01.707-.293H20" />
                           </svg>
-                          <span className="text-sm text-gray-700">Requests</span>
+                          <span className="text-sm text-gray-700">{isCompany ? "Pickup Requests" : "Requests"}</span>
                         </Link>
                       </>
                     )}
