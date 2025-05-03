@@ -74,14 +74,29 @@ const Login = () => {
 
      
     // Dispatch separately based on role
-    if (role === "user") {
-        dispatch(addUser({ ...responseData, role: "user" }))
-      } else {
-        dispatch(addCompany({ ...responseData, role: "company" }))
-      }
+    // if (role === "user") {
+    //     dispatch(addUser({ ...responseData, role: "user" }))
+    //   } else {
+    //     dispatch(addCompany({ ...responseData, role: "company" }))
+    //   }
 
-      // Navigate to shared profile page
-      navigate("/profile");
+      if (isLoginForm) {
+        // If logging in → save to store and go to profile
+        if (role === "user") {
+          dispatch(addUser({ ...responseData, role: "user" }));
+        } else {
+          dispatch(addCompany({ ...responseData, role: "company" }));
+        }
+      
+        localStorage.setItem("role", role);
+        localStorage.setItem("profile", JSON.stringify(responseData));
+      
+        navigate("/profile");
+      } else {
+        // If signing up → switch to login form and redirect to login
+        setIsLoginForm(true); // switch form to login mode
+        navigate("/login");   // redirect to login route
+      }
     } catch (err) {
       setError(err?.response?.data || "Something went wrong");
     }
