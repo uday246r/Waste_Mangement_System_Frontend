@@ -2,7 +2,7 @@ import axios from 'axios';
 import React from 'react';
 import { BASE_URL } from '../utils/constants';
 import { useDispatch } from 'react-redux';
-import { removeUserFromFeed } from '../utils/feedSlice';
+import { removeFromFeed } from '../utils/feedSlice';
 
 const UserCard = ({ user }) => {
   const { _id, firstName, lastName, photoUrl, age, gender, about } = user;
@@ -15,7 +15,7 @@ const UserCard = ({ user }) => {
         {}, 
         {withCredentials: true}
       );
-      dispatch(removeUserFromFeed(userId));
+      dispatch(removeFromFeed(userId));
     } catch(err) {
       console.log("Failed to send request:", err);
     }

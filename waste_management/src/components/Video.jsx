@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BASE_URL } from '../utils/constants';
 import { useDispatch, useSelector } from 'react-redux';
-import { removeUserFromFeed } from '../utils/feedSlice';
+ import { removeFromFeed } from '../utils/feedSlice';
 
 const Video = () => {
   const [title, setTitle] = useState('');
@@ -105,7 +105,7 @@ const Video = () => {
 
       // Only dispatch to remove user from feed if the request wasn't "accepted"
       if (res.data.status !== 'accepted') {
-        dispatch(removeUserFromFeed(userId));
+        dispatch(removeFromFeed(userId));
       }
     } catch (err) {
       const errorMsg = err?.response?.data?.message || 'Something went wrong';
