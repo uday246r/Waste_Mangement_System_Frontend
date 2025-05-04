@@ -1,16 +1,19 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { BASE_URL } from '../utils/constants';
 import { addPickupRequest, updatePickupRequestStatus } from '../utils/pickupSlice';
 
 const PickupRequests = () => {
     const pickupRequests = useSelector((store) => store.pickup.pickupRequests);
+    const user = useSelector((store) => store.user || store.company);
     const dispatch = useDispatch();
+
+    const isCompany = user?.role === 'company';
 
     const reviewRequest = async (status, _id) => {
         try {
-            const res = await axios.post(
+            await axios.post(
                 BASE_URL + "/pickup/review/" + status + "/" + _id,
                 {},
                 { withCredentials: true }
@@ -23,13 +26,16 @@ const PickupRequests = () => {
 
     const fetchPickupRequests = async () => {
         try {
-            const res = await axios.get(BASE_URL + "/pickup/company/requests/pickup", {
+            const endpoint = isCompany
+                ? "/pickup/company/requests/pickup"
+                : "/pickup/user/requests/pickup"; // ensure correct endpoint
+
+            const res = await axios.get(BASE_URL + endpoint, {
                 withCredentials: true,
             });
-    
-            // Ensure the response has the expected structure and doesn't duplicate data
+
             if (Array.isArray(res.data.data)) {
-                dispatch(addPickupRequest(res.data.data)); // This will now avoid adding duplicates
+                dispatch(addPickupRequest(res.data.data));
             } else {
                 console.warn("Unexpected data format:", res.data);
             }
@@ -37,11 +43,10 @@ const PickupRequests = () => {
             console.error("Failed to fetch pickup requests:", err);
         }
     };
-    
 
     useEffect(() => {
         fetchPickupRequests();
-    }, []);
+    }, [isCompany]);
 
     if (!pickupRequests) return null;
 
@@ -61,23 +66,68 @@ const PickupRequests = () => {
 
             <div className="space-y-6">
                 {pickupRequests.map((request) => {
-                    // Safely access nested properties
-                    const user = request.fromUserId || {};
-                    const { _id: requestId } = request;
-                    const { firstName = '', lastName = '', photoUrl = '', age = '', gender = '', about = '' } = user;
+                    const { _id: requestId, status } = request;
 
-                    // If fromUserId is invalid or missing, skip rendering this item
-                    if (!user || !user._id) {
-                        console.warn("Skipping malformed request:", request);
-                        return null;
-                    }
+                    if (isCompany) {
+                        const user = request.fromUserId || {};
+                        const { firstName = '', lastName = '', photoUrl = '', age = '', gender = '', about = '' } = user;
 
-                    return (
-                        <div key={requestId} className="bg-white rounded-lg shadow-lg p-6">
-                            <div className="flex items-center">
+                        if (!user._id) {
+                            console.warn("Skipping malformed request:", request);
+                            return null;
+                        }
+
+                        return (
+                            <div key={requestId} className="bg-white rounded-lg shadow-lg p-6">
+                                <div className="flex items-center">
+                                    <div className="w-20 h-20 rounded-full overflow-hidden mr-6">
+                                        {photoUrl ? (
+                                            <img src={photoUrl} alt="User" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                                <span className="text-gray-500">No Image</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex-1">
+                                        <h2 className="text-green-500 text-xl font-semibold">{firstName} {lastName}</h2>
+                                        <p className="text-gray-600">{age} {gender && `- ${gender}`}</p>
+                                        <p className="text-gray-500">{about || "No info available."}</p>
+                                    </div>
+
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={() => reviewRequest("rejected", requestId)}
+                                            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                        >
+                                            Reject
+                                        </button>
+                                        <button
+                                            onClick={() => reviewRequest("accepted", requestId)}
+                                            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                        >
+                                            Accept
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    } else {
+                        // FOR USER SIDE
+                        const company = request.toCompanyId || {};
+                        const { companyName = '', photoUrl = '', about = '' } = company;
+
+                        if (!company._id) {
+                            console.warn("Skipping malformed request:", request);
+                            return null;
+                        }
+
+                        return (
+                            <div key={requestId} className="bg-white rounded-lg shadow-lg p-6 flex items-center">
                                 <div className="w-20 h-20 rounded-full overflow-hidden mr-6">
                                     {photoUrl ? (
-                                        <img src={photoUrl} alt="User" className="w-full h-full object-cover" />
+                                        <img src={photoUrl} alt="Company" className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                                             <span className="text-gray-500">No Image</span>
@@ -86,28 +136,23 @@ const PickupRequests = () => {
                                 </div>
 
                                 <div className="flex-1">
-                                    <h2 className="text-green-500 text-xl font-semibold">{firstName} {lastName}</h2>
-                                    <p className="text-gray-600">{age} {gender && `- ${gender}`}</p>
+                                    <h2 className="text-blue-500 text-xl font-semibold">{companyName}</h2>
                                     <p className="text-gray-500">{about || "No info available."}</p>
                                 </div>
 
-                                <div className="flex space-x-2">
-                                    <button
-                                        onClick={() => reviewRequest("rejected", requestId)}
-                                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                                    >
-                                        Reject
-                                    </button>
-                                    <button
-                                        onClick={() => reviewRequest("accepted", requestId)}
-                                        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                                    >
-                                        Accept
-                                    </button>
+                                <div>
+                                    <span className={`text-white px-4 py-2 rounded ${status === "pending"
+                                        ? "bg-yellow-500"
+                                        : status === "accepted"
+                                            ? "bg-green-500"
+                                            : "bg-red-500"
+                                        }`}>
+                                        {status.toUpperCase()}
+                                    </span>
                                 </div>
                             </div>
-                        </div>
-                    );
+                        );
+                    }
                 })}
             </div>
         </div>
