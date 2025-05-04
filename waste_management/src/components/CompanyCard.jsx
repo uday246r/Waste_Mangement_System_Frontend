@@ -12,6 +12,8 @@ const CompanyCard = ({ company }) => {
     photoUrl,
     price,
     wasteType,
+    pickupTimeFrom,
+    pickupTimeTo,
     location,
     about,
     email,
@@ -65,6 +67,11 @@ const CompanyCard = ({ company }) => {
 
         <div className="text-right space-y-2">
           <div className="text-sm text-gray-600">{location}</div>
+          <div className="text-sm text-gray-600">
+  {company.pickupTimeFrom && company.pickupTimeTo
+    ? `${company.pickupTimeFrom} - ${company.pickupTimeTo}`
+    : 'No pickup time available'}
+</div>
           <div className="font-semibold text-teal-600">${price}/pickup</div>
         </div>
       </div>

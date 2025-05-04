@@ -17,6 +17,8 @@ const Login = () => {
     emailId: "",
     password: "",
     wasteType: "Plastic",
+    pickupTimeFrom: "",
+    pickupTimeTo: "",
     about: "",
     price: "",
     photoUrl: "",
@@ -38,6 +40,10 @@ const Login = () => {
           ? `/auth/user/${isLoginForm ? "login" : "signup"}`
           : `/auth/company/${isLoginForm ? "login" : "signup"}`;
 
+          if (!formData.pickupTimeFrom || !formData.pickupTimeTo) {
+            return setError("Please select a valid pickup time range.");
+          }
+          
       const data =
         role === "user"
           ? isLoginForm
@@ -61,6 +67,7 @@ const Login = () => {
               emailId: formData.emailId,
               password: formData.password,
               wasteType: formData.wasteType,
+              pickupTime: `${formData.pickupTimeFrom} - ${formData.pickupTimeTo}`,
               price: formData.price,
               about: formData.about,
               photoUrl: formData.photoUrl,
@@ -213,6 +220,31 @@ const Login = () => {
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
                 />
               </div>
+              <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Pickup Time Range
+  </label>
+  <div className="flex space-x-4">
+    <input
+      type="time"
+      name="pickupTimeFrom"
+      value={formData.pickupTimeFrom || ""}
+      onChange={handleInputChange}
+      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+    />
+    <span className="self-center text-gray-600">to</span>
+    <input
+      type="time"
+      name="pickupTimeTo"
+      value={formData.pickupTimeTo || ""}
+      onChange={handleInputChange}
+      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+    />
+  </div>
+</div>
+
+
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">About</label>
                 <textarea

@@ -34,6 +34,15 @@ const CompanyProfile = () => {
           </div>
 
           <div>
+            <p className="text-gray-500">Pickup Time:</p>
+            <p className="text-lg font-medium">
+              {company.pickupTimeFrom && company.pickupTimeTo
+                ? `${company.pickupTimeFrom} - ${company.pickupTimeTo}`
+                : 'Not specified'}
+            </p>
+          </div>
+
+          <div>
             <p className="text-gray-500">About:</p>
             <p className="text-lg font-medium">₹{company.about}</p>
           </div>

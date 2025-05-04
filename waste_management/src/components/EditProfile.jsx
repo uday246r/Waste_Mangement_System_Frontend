@@ -64,6 +64,7 @@ const Profile = () => {
       "photoUrl",
       "gender",
       "wasteType",
+      "pickupTime",
       "location",
       "age",
       "about",
@@ -165,6 +166,30 @@ const Profile = () => {
                       <option value="Metal">Metal</option>
                     </select>
                   </div>
+                  <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Pickup Time Range
+  </label>
+  <div className="flex space-x-4">
+    <input
+      type="time"
+      name="pickupTimeFrom"
+      value={formData.pickupTimeFrom || ""}
+      onChange={handleChange}
+      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+    />
+    <span className="self-center text-gray-600">to</span>
+    <input
+      type="time"
+      name="pickupTimeTo"
+      value={formData.pickupTimeTo || ""}
+      onChange={handleChange}
+      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition text-gray-500"
+    />
+  </div>
+</div>
+
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">About</label>
                     <textarea
