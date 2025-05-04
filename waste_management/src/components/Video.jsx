@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BASE_URL } from '../utils/constants';
 import { useDispatch, useSelector } from 'react-redux';
- import { removeFromFeed } from '../utils/feedSlice';
+import { removeFromFeed } from '../utils/feedSlice';
 
 const Video = () => {
   const [title, setTitle] = useState('');
@@ -14,17 +14,22 @@ const Video = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [showUploadForm, setShowUploadForm] = useState(false);
+  const [loading, setLoading] = useState(true);
   const videosPerPage = 6;
   const dispatch = useDispatch();
 
   // Function to fetch videos from the backend
   const fetchVideos = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(`${BASE_URL}/videos`, { withCredentials: true });
       console.log('Fetched Videos:', res?.data?.videos);
       setVideoList(res?.data?.videos || []);
     } catch (err) {
       console.error('Error fetching videos', err);
+      setError('Failed to load videos. Please try again.');
+    } finally {
+      setTimeout(() => setLoading(false), 800);
     }
   };
 
@@ -76,7 +81,6 @@ const Video = () => {
 
   // Handle "Interested" or "Ignore" actions
   const handleInterest = async (status, userId) => {
-    console.log('Sending request with status:', status, 'and userId:', userId);
     try {
       const res = await axios.post(
         `${BASE_URL}/request/send/${status}/${userId}`,
@@ -86,19 +90,15 @@ const Video = () => {
 
       // Handle the response based on the request's status
       if (res.data.status === 'accepted') {
-        // Already friends, do not proceed with any further actions
         showNotification('You are already friends!', 'info');
-        return; // Exit the function early to prevent further actions
+        return;
       } else if (res.data.status === 'ignored') {
-        // Request ignored
         showNotification('You have ignored this request.', 'info');
         updateVideoListWithStatus(userId, 'ignored');
       } else if (res.data.status === 'interested') {
-        // Request is still in the "interested" state
         showNotification('Request already sent!', 'info');
         updateVideoListWithStatus(userId, 'interested');
       } else {
-        // If new request is successfully sent
         showNotification(`Connection request sent as ${status}`, 'success');
         updateVideoListWithStatus(userId, status);
       }
@@ -111,7 +111,6 @@ const Video = () => {
       const errorMsg = err?.response?.data?.message || 'Something went wrong';
       const statusCode = err?.response?.status;
 
-      // Handle error messages
       if (statusCode === 409 || errorMsg.toLowerCase().includes('already exists')) {
         showNotification('Request already exists.', 'error');
       } else {
@@ -126,7 +125,7 @@ const Video = () => {
     setVideoList((prevList) =>
       prevList.map((video) =>
         video.userId._id === userId
-          ? { ...video, requestStatus: status } // Update the requestStatus field
+          ? { ...video, requestStatus: status } 
           : video
       )
     );
@@ -161,32 +160,46 @@ const Video = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-900 via-teal-800 to-green-900 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-white">DIY Waste Management Videos</h1>
-          <p className="text-teal-200 mt-2">Learn and share eco-friendly waste management techniques</p>
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-teal-50 to-green-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-teal-600 mx-auto"></div>
+          <p className="mt-4 text-teal-700 font-medium">Loading your eco-friendly videos...</p>
         </div>
+      </div>
+    );
+  }
 
-        {/* Upload Button */}
-        <div className="flex justify-center mb-8">
-          <button
-            onClick={() => setShowUploadForm(!showUploadForm)}
-            className="px-6 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-lg shadow-lg transition-all duration-300 flex items-center"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            {showUploadForm ? 'Hide Upload Form' : 'Share a Video'}
-          </button>
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-green-50 py-8 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-r from-teal-600 to-green-500 rounded-2xl shadow-lg overflow-hidden mb-8">
+          <div className="px-8 py-12 md:flex items-center justify-between">
+            <div className="md:w-2/3 mb-6 md:mb-0">
+              <h1 className="text-3xl md:text-4xl font-bold text-white">DIY Waste Management Videos</h1>
+              <p className="mt-3 text-teal-50 text-lg">Learn and share eco-friendly waste management techniques with our community</p>
+            </div>
+            <div className="md:w-1/3 flex justify-end">
+              <button 
+                onClick={() => setShowUploadForm(!showUploadForm)}
+                className="bg-white text-teal-600 hover:bg-teal-50 shadow-md font-medium px-5 py-3 rounded-lg transition-all duration-300 flex items-center"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                {showUploadForm ? 'Hide Upload Form' : 'Share a Video'}
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Upload Form */}
         {showUploadForm && (
-          <div className="mb-10 flex justify-center">
-            <div className="w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden">
-              <div className="bg-gradient-to-r from-teal-500 to-green-500 py-2 px-4">
+          <div className="mb-10">
+            <div className="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden transition-all duration-300">
+              <div className="bg-gradient-to-r from-teal-500 to-green-500 py-3 px-6">
                 <h2 className="text-xl font-bold text-white">Share a YouTube Video</h2>
               </div>
               <div className="p-6">
@@ -197,7 +210,7 @@ const Video = () => {
                   <input
                     id="title"
                     type="text"
-                    className="text-gray-500 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="text-gray-800 w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Enter video title"
@@ -210,7 +223,7 @@ const Video = () => {
                   <textarea
                     id="description"
                     rows="3"
-                    className="text-gray-500 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+                    className="text-gray-800 w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Describe what the video is about"
@@ -223,16 +236,16 @@ const Video = () => {
                   <input
                     id="url"
                     type="text"
-                    className="text-gray-500 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="text-gray-800 w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     value={youtubeUrl}
                     onChange={(e) => setYoutubeUrl(e.target.value)}
                     placeholder="https://www.youtube.com/watch?v=..."
                   />
                 </div>
                 {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-                <div className="flex justify-center">
+                <div className="flex justify-center mt-6">
                   <button
-                    className={`px-6 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg shadow transition-colors duration-300 flex items-center ${
+                    className={`px-6 py-3 bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600 text-white font-medium rounded-lg shadow transition-all duration-300 flex items-center ${
                       isUploading ? 'opacity-75 cursor-not-allowed' : ''
                     }`}
                     onClick={handleUpload}
@@ -263,17 +276,26 @@ const Video = () => {
 
         {/* Video Count and Filter Options (future enhancement) */}
         <div className="flex justify-between items-center mb-6">
-          <div className="text-white">
-            <span className="font-medium">{videoList.length}</span> videos available
+          <div className="text-teal-800 font-medium">
+            <span className="font-bold">{videoList.length}</span> videos available
           </div>
-          {/* Filter could be added here */}
+          <button 
+            onClick={fetchVideos}
+            className="text-teal-600 hover:text-teal-800 font-medium flex items-center"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
         </div>
 
         {/* Video Grid */}
         {videoList.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {currentVideos.map((video, idx) => (
-              <div key={idx} className="bg-white rounded-lg shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300">
+              <div key={idx} className="bg-white rounded-xl shadow-md overflow-hidden transform hover:scale-102 hover:shadow-lg transition-all duration-300">
                 <div className="aspect-video">
                   <iframe
                     className="w-full h-full"
@@ -283,21 +305,21 @@ const Video = () => {
                     allowFullScreen
                   />
                 </div>
-                <div className="p-4">
-                  <h4 className="text-lg font-bold text-gray-800 mb-1 line-clamp-1">{video.title}</h4>
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{video.description}</p>
-                  <div className="flex items-center mb-3">
-                    <div className="h-8 w-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold mr-2">
+                <div className="p-5">
+                  <h4 className="text-lg font-bold text-gray-800 mb-2 line-clamp-1">{video.title}</h4>
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">{video.description}</p>
+                  <div className="flex items-center mb-4">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-r from-teal-400 to-green-400 flex items-center justify-center text-white font-bold mr-3">
                       {video.userId.firstName.charAt(0)}{video.userId.lastName.charAt(0)}
                     </div>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm font-medium text-gray-700">
                       {video.userId.firstName} {video.userId.lastName}
                     </span>
                   </div>
                   
                   <div className="mt-2">
                     {video.requestStatus === 'friends' ? (
-                      <div className="flex items-center text-green-600">
+                      <div className="flex items-center text-green-600 bg-green-50 py-2 px-3 rounded-lg">
                         <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                         </svg>
@@ -306,7 +328,7 @@ const Video = () => {
                     ) : (
                       <div className="flex space-x-2">
                         <button
-                          className="px-3 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded transition-colors duration-300 flex-1 flex items-center justify-center"
+                          className="px-4 py-2 bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600 text-white rounded-lg transition-all duration-300 flex-1 flex items-center justify-center shadow-sm"
                           onClick={() => handleInterest('interested', video.userId._id)}
                         >
                           <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -315,7 +337,7 @@ const Video = () => {
                           Connect
                         </button>
                         <button
-                          className="px-3 py-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded transition-colors duration-300 flex-1 flex items-center justify-center"
+                          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-300 flex-1 flex items-center justify-center shadow-sm"
                           onClick={() => handleInterest('ignored', video.userId._id)}
                         >
                           <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -331,23 +353,32 @@ const Video = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white bg-opacity-10 rounded-lg p-8 text-center">
-            <svg className="w-16 h-16 text-teal-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-white bg-opacity-90 rounded-xl p-10 text-center shadow-md">
+            <svg className="w-16 h-16 text-teal-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            <h3 className="text-xl font-bold text-white mb-2">No Videos Available</h3>
-            <p className="text-teal-200">Be the first to share an educational waste management video!</p>
+            <h3 className="text-2xl font-bold text-teal-800 mb-3">No Videos Available</h3>
+            <p className="text-gray-600 mb-6">Be the first to share an educational waste management video!</p>
+            <button 
+              onClick={() => setShowUploadForm(true)}
+              className="px-6 py-3 bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600 text-white font-medium rounded-lg shadow transition-all duration-300 inline-flex items-center"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Upload Your First Video
+            </button>
           </div>
         )}
 
         {/* Pagination */}
         {videoList.length > videosPerPage && (
-          <div className="flex justify-center mt-8">
-            <nav className="flex items-center bg-white rounded-lg shadow overflow-hidden">
+          <div className="flex justify-center mt-10 mb-4">
+            <nav className="flex items-center bg-white rounded-lg shadow-md overflow-hidden">
               <button
                 onClick={goToPreviousPage}
                 disabled={currentPage === 1}
-                className={`px-4 py-2 text-teal-600 hover:bg-teal-50 flex items-center transition-colors ${
+                className={`px-4 py-3 text-teal-600 hover:bg-teal-50 flex items-center transition-colors ${
                   currentPage === 1 ? 'cursor-not-allowed opacity-50' : ''
                 }`}
               >
@@ -370,9 +401,9 @@ const Video = () => {
                       <button
                         key={pageNumber}
                         onClick={() => paginate(pageNumber)}
-                        className={`px-4 py-2 ${
+                        className={`px-5 py-3 ${
                           currentPage === pageNumber
-                            ? 'bg-teal-600 text-white font-medium'
+                            ? 'bg-gradient-to-r from-teal-500 to-green-500 text-white font-medium'
                             : 'text-teal-600 hover:bg-teal-50'
                         } transition-colors`}
                       >
@@ -385,21 +416,21 @@ const Video = () => {
                     (pageNumber === currentPage - 2 && pageNumber > 1) ||
                     (pageNumber === currentPage + 2 && pageNumber < totalPages)
                   ) {
-                    return <span key={pageNumber} className="px-4 py-2 text-gray-400">...</span>;
+                    return <span key={pageNumber} className="px-4 py-3 text-gray-400">...</span>;
                   }
                   return null;
                 })}
               </div>
               
               {/* Page X of Y for mobile view */}
-              <div className="md:hidden px-4 py-2 font-medium text-teal-600">
+              <div className="md:hidden px-4 py-3 font-medium text-teal-600">
                 Page {currentPage} of {totalPages}
               </div>
               
               <button
                 onClick={goToNextPage}
                 disabled={currentPage === totalPages}
-                className={`px-4 py-2 text-teal-600 hover:bg-teal-50 flex items-center transition-colors ${
+                className={`px-4 py-3 text-teal-600 hover:bg-teal-50 flex items-center transition-colors ${
                   currentPage === totalPages ? 'cursor-not-allowed opacity-50' : ''
                 }`}
               >
@@ -411,15 +442,22 @@ const Video = () => {
             </nav>
           </div>
         )}
+        
+        {/* Footer Indicator */}
+        {videoList.length > 0 && (
+          <div className="text-center text-gray-500 text-sm mt-8">
+            Showing {Math.min(indexOfFirstVideo + 1, videoList.length)} to {Math.min(indexOfLastVideo, videoList.length)} of {videoList.length} videos
+          </div>
+        )}
       </div>
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center animate-fade-in-out z-50">
-          <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-xl flex items-center z-50">
+          <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
           </svg>
-          Video uploaded successfully.
+          Video uploaded successfully!
         </div>
       )}
     </div>
