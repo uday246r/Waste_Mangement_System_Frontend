@@ -39,11 +39,14 @@ const Login = () => {
         role === "user"
           ? `/auth/user/${isLoginForm ? "login" : "signup"}`
           : `/auth/company/${isLoginForm ? "login" : "signup"}`;
-
-          if (!formData.pickupTimeFrom || !formData.pickupTimeTo) {
-            return setError("Please select a valid pickup time range.");
-          }
-          
+  
+      // ✅ Only validate pickup time if role is company AND it's a signup
+      if (!isLoginForm && role === "company") {
+        if (!formData.pickupTimeFrom || !formData.pickupTimeTo) {
+          return setError("Please select a valid pickup time range.");
+        }
+      }
+  
       const data =
         role === "user"
           ? isLoginForm

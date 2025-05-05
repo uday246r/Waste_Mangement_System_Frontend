@@ -6,6 +6,8 @@ import { removeFromFeed } from '../utils/feedSlice';
 import { addPickupRequest } from '../utils/pickupSlice';  // Import the action for adding requests
 
 const CompanyCard = ({ company }) => {
+  console.log('CompanyCard company:', company);
+
   const {
     _id,
     companyName,
@@ -66,13 +68,15 @@ const CompanyCard = ({ company }) => {
         </div>
 
         <div className="text-right space-y-2">
-          <div className="text-sm text-gray-600">{location}</div>
           <div className="text-sm text-gray-600">
-  {company.pickupTimeFrom && company.pickupTimeTo
-    ? `${company.pickupTimeFrom} - ${company.pickupTimeTo}`
+          <div className="text-sm text-gray-600">{location}</div>
+  {pickupTimeFrom && pickupTimeTo
+    ? `${pickupTimeFrom} - ${pickupTimeTo}`
     : 'No pickup time available'}
 </div>
           <div className="font-semibold text-teal-600">${price}/pickup</div>
+
+
         </div>
       </div>
 
