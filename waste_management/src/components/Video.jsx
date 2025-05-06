@@ -174,6 +174,57 @@ const Video = () => {
     );
   }
 
+  // Toast UI based on type
+  const getToastStyles = () => {
+    switch (toastType) {
+      case 'error':
+        return {
+          bg: 'bg-red-100',
+          border: 'border-red-500',
+          text: 'text-red-700',
+          icon: (
+            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )
+        };
+      case 'info':
+        return {
+          bg: 'bg-blue-100',
+          border: 'border-blue-500',
+          text: 'text-blue-700',
+          icon: (
+            <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )
+        };
+      default: // success
+        return {
+          bg: 'bg-green-100',
+          border: 'border-green-500',
+          text: 'text-green-700',
+          icon: (
+            <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l5-5z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )
+        };
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-green-50 py-8 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
@@ -456,19 +507,13 @@ const Video = () => {
 
       {/* Toast Notification */}
       {showToast && (
-  <div className="fixed top-4 inset-x-0 flex justify-center items-start z-50">
-    <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-lg flex items-center space-x-3 max-w-md transition-all duration-300 ease-in-out transform animate-fade-in-down">
-      <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-        <path
-          fillRule="evenodd"
-          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l5-5z"
-          clipRule="evenodd"
-        />
-      </svg>
-      <p className="text-sm font-medium">{toastMessage}</p>
-    </div>
-  </div>
-)}
+        <div className="fixed top-4 inset-x-0 flex justify-center items-start z-50">
+          <div className={`${getToastStyles().bg} border-l-4 ${getToastStyles().border} ${getToastStyles().text} p-4 rounded-lg shadow-lg flex items-center space-x-3 max-w-md transition-all duration-300 ease-in-out transform animate-fade-in-down`}>
+            {getToastStyles().icon}
+            <p className="text-sm font-medium">{toastMessage}</p>
+          </div>
+        </div>
+      )}
 
     </div>
   );

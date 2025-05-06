@@ -11,6 +11,9 @@ import Connections from "./components/connections";
 import Requests from "./components/Requests";
 import PickupRequests from "./components/PickupRequests";
 import Video from "./components/Video";
+import AboutUs from "./components/About";
+import Footer from "./components/Footer";
+import ContactUs from "./components/Contact";
 
 function App() {
   return (
@@ -25,6 +28,8 @@ function App() {
             <Route path="connections" element={<Connections />} />
             <Route path="requests" element={<Requests />} />
             <Route path="pickuprequest" element={<PickupRequests />} />
+            <Route path="about" element={<AboutUs />} />
+            <Route path="contact" element={<ContactUs />} />
           </Route>
         </Routes>
       </BrowserRouter>
