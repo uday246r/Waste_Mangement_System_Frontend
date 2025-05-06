@@ -139,6 +139,18 @@ const NavBar = () => {
                         </svg>
                         <span className="text-sm text-gray-700">Connections</span>
                       </Link>
+                      
+                      <Link
+                        to="/requests"
+                        className="flex items-center px-4 py-3 hover:bg-gray-50"
+                        onClick={() => setIsDropdownOpen(false)}
+                      >
+                        <svg className="h-5 w-5 text-gray-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                            d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8m-5 5h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293h3.172a1 1 0 00.707-.293l2.414-2.414a1 1 0 01.707-.293H20" />
+                        </svg>
+                        <span className="text-sm text-gray-700">Requests</span>
+                      </Link>
 
                       <Link
                         to="/pickuprequest"

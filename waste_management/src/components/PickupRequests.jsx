@@ -25,6 +25,19 @@ const PickupRequests = () => {
         }
     };
 
+    const markAsPickedUp = async (_id) => {
+        try {
+            await axios.post(
+                BASE_URL + "/pickup/mark-picked-up/" + _id,
+                {},
+                { withCredentials: true }
+            );
+            dispatch(updatePickupRequestStatus({ requestId: _id, status: "picked-up" }));
+        } catch (err) {
+            console.error("Failed to mark request as picked up:", err);
+        }
+    };
+
     const fetchPickupRequests = async () => {
         setLoading(true);
         try {
@@ -51,6 +64,44 @@ const PickupRequests = () => {
     useEffect(() => {
         fetchPickupRequests();
     }, [isCompany]);
+
+    // Helper function to render status badge with appropriate styles
+    const renderStatusBadge = (status) => {
+        let bgColor, textColor, statusText;
+        
+        switch(status) {
+            case "pending":
+                bgColor = "bg-yellow-100";
+                textColor = "text-yellow-800";
+                statusText = "PENDING";
+                break;
+            case "accepted":
+                bgColor = "bg-green-100";
+                textColor = "text-green-800";
+                statusText = "ACCEPTED";
+                break;
+            case "rejected":
+                bgColor = "bg-red-100";
+                textColor = "text-red-800";
+                statusText = "REJECTED";
+                break;
+            case "picked-up":
+                bgColor = "bg-blue-100";
+                textColor = "text-blue-800";
+                statusText = "PICKED UP";
+                break;
+            default:
+                bgColor = "bg-gray-100";
+                textColor = "text-gray-800";
+                statusText = status.toUpperCase();
+        }
+        
+        return (
+            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${bgColor} ${textColor}`}>
+                {statusText}
+            </span>
+        );
+    };
 
     if (loading) {
         return (
@@ -123,7 +174,7 @@ const PickupRequests = () => {
                         if (isCompany) {
                             // COMPANY VIEW
                             const user = request.fromUserId || {};
-                            const { firstName = '', lastName = '', photoUrl = '', age = '', gender = '', about = '' } = user;
+                            const { firstName = '', lastName = '', photoUrl = '', age = '', gender = '', about = '', emailId = '' } = user;
 
                             if (!user._id) {
                                 console.warn("Skipping malformed request:", request);
@@ -174,42 +225,94 @@ const PickupRequests = () => {
                                                 </p>
                                                 
                                                 {/* Status Badge */}
-                                                <div className="mt-4">
-                                                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                                                        status === "pending" ? "bg-yellow-100 text-yellow-800" :
-                                                        status === "accepted" ? "bg-green-100 text-green-800" :
-                                                        "bg-red-100 text-red-800"
-                                                    }`}>
-                                                        {status.toUpperCase()}
+                                                <div className="mt-4 flex items-center">
+                                                    {renderStatusBadge(status)}
+                                                    
+                                                    {/* Show user email when request is accepted */}
+                                                    {status === "accepted" && (
+                                                        <div className="ml-3 flex items-center">
+                                                            <svg className="w-4 h-4 text-teal-600 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"
+                                                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                            </svg>
+                                                            <a href={`mailto:${emailId}`} className="text-sm text-teal-600 hover:underline">
+                                                                {emailId}
+                                                            </a>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                
+                                                {/* Request Date */}
+                                                <div className="flex items-center mt-2">
+                                                    <svg className="w-4 h-4 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                    <span className="text-sm text-gray-600">
+                                                        Request date: {new Date(request.createdAt || Date.now()).toLocaleDateString()}
                                                     </span>
                                                 </div>
                                             </div>
                                             
                                             {/* Action Buttons */}
-                                            {status === "pending" && (
-                                                <div className="md:flex-shrink-0 md:ml-4 mt-4 md:mt-0 flex md:flex-col space-x-3 md:space-x-0 md:space-y-3">
-                                                    <button
-                                                        onClick={() => reviewRequest("accepted", requestId)}
-                                                        className="flex-1 md:flex-none px-4 py-2 bg-gradient-to-r from-teal-600 to-green-500 text-white rounded-lg hover:shadow-md transition-all duration-300"
+                                            <div className="md:flex-shrink-0 md:ml-4 mt-4 md:mt-0 flex md:flex-col space-x-3 md:space-x-0 md:space-y-3">
+                                                {status === "pending" && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => reviewRequest("accepted", requestId)}
+                                                            className="flex-1 md:flex-none px-4 py-2 bg-gradient-to-r from-teal-600 to-green-500 text-white rounded-lg hover:shadow-md transition-all duration-300"
+                                                        >
+                                                            Accept
+                                                        </button>
+                                                        <button
+                                                            onClick={() => reviewRequest("rejected", requestId)}
+                                                            className="flex-1 md:flex-none px-4 py-2 bg-white border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition-all duration-300"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </>
+                                                )}
+                                                
+                                                {/* Show contact button when request is accepted */}
+                                                {status === "accepted" && (
+                                                    <a 
+                                                        href={`mailto:${emailId}?subject=Regarding your waste pickup request&body=Hello ${firstName},%0D%0A%0D%0AWe've accepted your waste pickup request and would like to coordinate the details.%0D%0A%0D%0ARegards,%0D%0AThe Team`}
+                                                        className="flex-1 md:flex-none px-4 py-2 bg-gradient-to-r from-teal-600 to-green-500 text-white rounded-lg hover:shadow-md transition-all duration-300 flex items-center justify-center"
                                                     >
-                                                        Accept
-                                                    </button>
-                                                    <button
-                                                        onClick={() => reviewRequest("rejected", requestId)}
-                                                        className="flex-1 md:flex-none px-4 py-2 bg-white border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition-all duration-300"
-                                                    >
-                                                        Reject
-                                                    </button>
-                                                </div>
-                                            )}
+                                                        <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                                                                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                        </svg>
+                                                        Contact User
+                                                    </a>
+                                                )}
+                                            </div>
                                         </div>
+                                        
+                                        {/* Pickup Info Section - Only visible for picked-up requests */}
+                                        {status === "picked-up" && (
+                                            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                                <div className="flex items-start">
+                                                    <svg className="w-5 h-5 text-blue-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <div>
+                                                        <h3 className="text-sm font-semibold text-blue-800">Waste Pickup Completed</h3>
+                                                        <p className="text-xs text-blue-600 mt-1">
+                                                            The user has confirmed that the waste has been successfully picked up.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
                         } else {
                             // USER VIEW
                             const company = request.toCompanyId || {};
-                            const { companyName = '', photoUrl = '', about = '' } = company;
+                            const { companyName = '', photoUrl = '', about = '', emailId = '' } = company;
 
                             if (!company._id) {
                                 console.warn("Skipping malformed request:", request);
@@ -258,19 +361,85 @@ const PickupRequests = () => {
                                                         Request date: {new Date(request.createdAt || Date.now()).toLocaleDateString()}
                                                     </span>
                                                 </div>
+                                                
+                                                {/* Status Badge */}
+                                                <div className="mt-2">
+                                                    {renderStatusBadge(status)}
+                                                </div>
+                                                
+                                                {/* Company Email - Only shown when accepted */}
+                                                {status === "accepted" && (
+                                                    <div className="mt-2 flex items-center">
+                                                        <svg className="w-4 h-4 text-teal-600 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"
+                                                                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                        </svg>
+                                                        <a href={`mailto:${emailId}`} className="text-sm text-teal-600 hover:underline">
+                                                            {emailId}
+                                                        </a>
+                                                    </div>
+                                                )}
                                             </div>
                                             
-                                            {/* Status Badge */}
+                                            {/* Action Buttons for User */}
                                             <div className="md:flex-shrink-0 md:ml-4 mt-4 md:mt-0">
-                                                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-                                                    status === "pending" ? "bg-yellow-100 text-yellow-800" :
-                                                    status === "accepted" ? "bg-green-100 text-green-800" :
-                                                    "bg-red-100 text-red-800"
-                                                }`}>
-                                                    {status.toUpperCase()}
-                                                </span>
+                                                {status === "accepted" && (
+                                                    <div className="flex flex-col space-y-3">
+                                                        {/* Contact Company Button */}
+                                                        <a 
+                                                            href={`mailto:${emailId}?subject=Regarding my waste pickup request&body=Hello ${companyName},%0D%0A%0D%0AI would like to discuss details about my waste pickup request.%0D%0A%0D%0ARegards`}
+                                                            className="px-4 py-2 bg-gradient-to-r from-teal-600 to-green-500 text-white rounded-lg hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                                                        >
+                                                            <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                                                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                            </svg>
+                                                            Contact Company
+                                                        </a>
+                                                        
+                                                        {/* Mark as Picked Up Button */}
+                                                        <button 
+                                                            onClick={() => markAsPickedUp(requestId)}
+                                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                                                        >
+                                                            <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                                                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                            Mark as Picked Up
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                
+                                                {status === "picked-up" && (
+                                                    <div className="px-4 py-3 bg-blue-50 rounded-lg border border-blue-100 text-center">
+                                                        <svg className="w-6 h-6 text-blue-500 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        <p className="text-sm font-medium text-blue-800">Pickup Complete</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
+
+                                        {/* Thank You Message - Only visible for picked-up requests */}
+                                        {status === "picked-up" && (
+                                            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                                <div className="flex items-start">
+                                                    <svg className="w-5 h-5 text-blue-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <div>
+                                                        <h3 className="text-sm font-semibold text-blue-800">Thank You for Using Our Service!</h3>
+                                                        <p className="text-xs text-blue-600 mt-1">
+                                                            Your waste has been successfully picked up. Thank you for contributing to a cleaner environment.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );

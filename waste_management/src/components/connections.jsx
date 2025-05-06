@@ -9,6 +9,7 @@ const Connections = () => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [expandedConnection, setExpandedConnection] = useState(null);
  
   const fetchConnections = async () => {
     setIsLoading(true);
@@ -29,6 +30,14 @@ const Connections = () => {
   useEffect(() => {
     fetchConnections();
   }, []);
+
+  const handleConnectedClick = (connectionId) => {
+    if (expandedConnection === connectionId) {
+      setExpandedConnection(null); // Collapse if already expanded
+    } else {
+      setExpandedConnection(connectionId); // Expand this connection
+    }
+  };
  
   if (isLoading) {
     return (
@@ -103,7 +112,9 @@ const Connections = () => {
       
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {connections.map((connection) => {
-            const { _id, firstName, lastName, photoUrl, age, gender, about } = connection;
+            const { _id, firstName, lastName, photoUrl, age, gender, emailId, about } = connection;
+            const isExpanded = expandedConnection === _id;
+            
             return (
               <div key={_id} className="bg-white rounded-xl shadow-md overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                 {/* Color Strip at Top */}
@@ -146,13 +157,16 @@ const Connections = () => {
                    
                     {/* Connection Badge */}
                     <div className="flex-shrink-0 ml-2">
-                      <div className="bg-teal-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                      <button 
+                        onClick={() => handleConnectedClick(_id)}
+                        className={`bg-teal-500 text-white px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300 hover:bg-teal-600 flex items-center ${isExpanded ? 'bg-teal-600' : ''}`}
+                      >
                         <svg className="w-4 h-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
                             d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         Connected
-                      </div>
+                      </button>
                     </div>
                   </div>
                   
@@ -162,6 +176,47 @@ const Connections = () => {
                       {about || "No information provided."}
                     </p>
                   </div>
+                  
+                  {/* Email Connection Section - Shows when Connected button is clicked */}
+                  {isExpanded && (
+                    <div className="mt-4 bg-teal-50 p-4 rounded-lg border border-teal-100 animate-fadeIn transition-all duration-300">
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-teal-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <a href={`mailto:${emailId}`} className="text-teal-600 hover:underline font-medium break-all">
+                          {emailId}
+                        </a>
+                      </div>
+                      <p className="text-teal-700 text-sm mt-2">
+                        Let's connect! Feel free to reach out and start a conversation about sustainable initiatives.
+                      </p>
+                      <div className="mt-3 flex space-x-2">
+                        <a 
+                          href={`mailto:${emailId}?subject=Let's connect on sustainable initiatives!&body=Hi ${firstName},%0D%0A%0D%0AI saw your profile on our sustainability platform and would love to connect with you.%0D%0A%0D%0ALooking forward to hearing from you!`} 
+                          className="bg-teal-600 text-white px-3 py-1 rounded text-sm hover:bg-teal-700 transition-colors duration-300 flex items-center"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          Email Now
+                        </a>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(emailId);
+                            alert(`${emailId} copied to clipboard!`);
+                          }}
+                          className="bg-teal-100 text-teal-800 px-3 py-1 rounded text-sm hover:bg-teal-200 transition-colors duration-300 flex items-center"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                          </svg>
+                          Copy Email
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -175,5 +230,16 @@ const Connections = () => {
     </div>
   );
 };
+
+/* Add this animation to your global CSS or component styles */
+/* 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+*/
 
 export default Connections;
