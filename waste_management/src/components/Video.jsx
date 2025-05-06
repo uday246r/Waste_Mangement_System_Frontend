@@ -11,6 +11,8 @@ const Video = () => {
   const [videoList, setVideoList] = useState([]);
   const [error, setError] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success'); // success, error, info
   const [isUploading, setIsUploading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -57,8 +59,7 @@ const Video = () => {
         { withCredentials: true }
       );
 
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      showNotification('Video uploaded successfully!', 'success');
       setTitle('');
       setDescription('');
       setYoutubeUrl('');
@@ -77,6 +78,14 @@ const Video = () => {
       /(?:youtube\.com\/(?:[^/]+\/\S+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
     const match = url.match(regex);
     return match && match[1]; // Returns the video ID if match is found
+  };
+
+  // Custom toast notification function
+  const showNotification = (message, type = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
   };
 
   // Handle "Interested" or "Ignore" actions
@@ -129,12 +138,6 @@ const Video = () => {
           : video
       )
     );
-  };
-
-  // Custom notification function
-  const showNotification = (message, type = 'success') => {
-    // You can implement a more sophisticated notification system here
-    alert(message);
   };
 
   // Pagination calculations
@@ -453,13 +456,20 @@ const Video = () => {
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-xl flex items-center z-50">
-          <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-          </svg>
-          Video uploaded successfully!
-        </div>
-      )}
+  <div className="fixed top-4 inset-x-0 flex justify-center items-start z-50">
+    <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-lg flex items-center space-x-3 max-w-md transition-all duration-300 ease-in-out transform animate-fade-in-down">
+      <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fillRule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l5-5z"
+          clipRule="evenodd"
+        />
+      </svg>
+      <p className="text-sm font-medium">{toastMessage}</p>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
