@@ -113,7 +113,7 @@ const CompanyCard = ({ company }) => {
       <div className="flex justify-between items-center px-4 pb-4">
         <div className="bg-teal-50 px-4 py-2 rounded-lg">
           <span className="font-bold text-lg text-teal-600">Rs {price}</span>
-          <span className="text-sm text-teal-500">/pickup</span>
+          <span className="text-sm text-teal-500">/kg</span>
         </div>
         
         <button

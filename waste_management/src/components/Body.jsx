@@ -7,6 +7,7 @@ import { BASE_URL } from "../utils/constants";
 import { useDispatch, useSelector } from 'react-redux';
 import { addUser } from "../utils/userSlice";
 import { addCompany } from "../utils/companySlice";
+import Chat from './chat';
 
 const Body = () => {
   const dispatch = useDispatch();
@@ -44,6 +45,11 @@ const Body = () => {
       <NavBar />
       <Outlet />
       <Footer />
+
+       <div className="fixed bottom-4 right-4 z-50">
+        <Chat />
+      </div>
+
     </div>
   );
 };

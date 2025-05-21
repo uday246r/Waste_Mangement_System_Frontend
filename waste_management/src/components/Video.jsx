@@ -390,7 +390,7 @@ const Video = () => {
                           </svg>
                           Connect
                         </button>
-                        <button
+                        {/* <button
                           className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-300 flex-1 flex items-center justify-center shadow-sm"
                           onClick={() => handleInterest('ignored', video.userId._id)}
                         >
@@ -398,7 +398,7 @@ const Video = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                           </svg>
                           Ignore
-                        </button>
+                        </button> */}
                       </div>
                     )}
                   </div>
