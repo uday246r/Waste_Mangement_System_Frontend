@@ -7,6 +7,8 @@ import Profile from "./components/Profile";
 import { Provider } from "react-redux";
 import appStore from "./utils/appStore";
 import Feed from "./components/Feed";
+// import CompanyFeed from "./components/companyFeed";
+import Home from "./components/Home";
 import Connections from "./components/connections";
 import Requests from "./components/Requests";
 import PickupRequests from "./components/PickupRequests";
@@ -21,7 +23,8 @@ function App() {
       <BrowserRouter basename="/">
         <Routes>
           <Route path="/" element={<Body />}>
-            <Route index element={<Feed />} />
+            <Route index element={<Home />} />
+            {/* <Route path="companies" element={<CompanyFeed />} /> */}
             <Route path="login" element={<Login />} />
             <Route path="profile" element={<Profile />} />
             <Route path="videos" element={<Video />} />

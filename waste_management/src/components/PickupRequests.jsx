@@ -9,6 +9,7 @@ const PickupRequests = () => {
     const user = useSelector((store) => store.user || store.company);
     const dispatch = useDispatch();
     const [loading, setLoading] = useState(true);
+    const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'pending' | 'accepted' | 'picked-up'
 
     const isCompany = user?.role === 'company';
 
@@ -103,6 +104,21 @@ const PickupRequests = () => {
         );
     };
 
+    // Apply filter and sorting (pending first)
+    const filteredAndSortedRequests = (() => {
+        const order = { 'pending': 0, 'accepted': 1, 'picked-up': 2, 'rejected': 3 };
+        const list = Array.isArray(pickupRequests) ? pickupRequests.slice() : [];
+        const filtered = statusFilter === 'all' ? list : list.filter(r => r.status === statusFilter);
+        return filtered.sort((a, b) => {
+            const ao = order[a.status] ?? 99;
+            const bo = order[b.status] ?? 99;
+            if (ao !== bo) return ao - bo; // pending first, etc.
+            const ad = new Date(a.createdAt || a.updatedAt || 0).getTime();
+            const bd = new Date(b.createdAt || b.updatedAt || 0).getTime();
+            return bd - ad; // most recent first within same status
+        });
+    })();
+
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-teal-50 to-green-50">
@@ -114,29 +130,7 @@ const PickupRequests = () => {
         );
     }
 
-    if (!pickupRequests || pickupRequests.length === 0) {
-        return (
-            <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-teal-50 to-green-50">
-                <div className="bg-white rounded-xl shadow-lg p-8 text-center max-w-md">
-                    <svg className="w-16 h-16 text-teal-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    <h1 className="text-2xl font-bold text-teal-800">No Pickup Requests Found</h1>
-                    <p className="text-gray-600 mt-2">
-                        {isCompany ? 
-                            "No users have requested waste pickups yet." : 
-                            "You haven't requested any waste pickups yet."}
-                    </p>
-                    {!isCompany && (
-                        <button className="mt-6 px-5 py-3 bg-gradient-to-r from-teal-600 to-green-500 text-white rounded-lg transition-all duration-300 hover:shadow-md font-medium">
-                            Request Pickup
-                        </button>
-                    )}
-                </div>
-            </div>
-        );
-    }
+    // don't early-return for empty; show message below filter instead
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-teal-50 to-green-50 py-8 px-4 sm:px-6">
@@ -167,8 +161,48 @@ const PickupRequests = () => {
                     </div>
                 </div>
 
+                {/* Filter Row */}
+                <div className="mb-4 flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                        Showing {filteredAndSortedRequests.length} of {pickupRequests?.length || 0} requests
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm text-gray-700">Filter:</label>
+                        <select
+                            className="px-3 py-2 text-sm rounded-md bg-white border border-gray-200 text-gray-700"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option value="all">All</option>
+                            <option value="pending">Pending</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="picked-up">Picked Up</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Empty state shown below filter */}
+                {(!filteredAndSortedRequests || filteredAndSortedRequests.length === 0) && (
+                    <div className="bg-white rounded-xl shadow-lg p-8 text-center max-w-md mx-auto">
+                        <svg className="w-16 h-16 text-teal-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <h1 className="text-2xl font-bold text-teal-800">No Pickup Requests Found</h1>
+                        <p className="text-gray-600 mt-2">
+                            {statusFilter !== 'all' ? `No ${statusFilter.replace('-', ' ')} requests.` : (
+                                isCompany ? "No users have requested waste pickups yet." : "You haven't requested any waste pickups yet."
+                            )}
+                        </p>
+                        {!isCompany && (
+                            <button className="mt-6 px-5 py-3 bg-gradient-to-r from-teal-600 to-green-500 text-white rounded-lg transition-all duration-300 hover:shadow-md font-medium">
+                                Request Pickup
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 <div className="space-y-6">
-                    {pickupRequests.map((request) => {
+                    {filteredAndSortedRequests.map((request) => {
                         const { _id: requestId, status } = request;
 
                         if (isCompany) {
