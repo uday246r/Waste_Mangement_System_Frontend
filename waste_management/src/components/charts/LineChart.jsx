@@ -65,3 +65,4 @@ const LineChart = ({ points, width = 600, height = 260, stroke = "#14b8a6", fill
 export default LineChart;
 
 
+

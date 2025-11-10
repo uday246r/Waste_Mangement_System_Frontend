@@ -3,10 +3,13 @@ import { BASE_URL } from "../utils/constants";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { addConnections } from "../utils/connectionSlice";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Connections = () => {
   const connections = useSelector((store) => store.connections);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [expandedConnection, setExpandedConnection] = useState(null);
@@ -38,6 +41,16 @@ const Connections = () => {
       setExpandedConnection(connectionId); // Expand this connection
     }
   };
+
+  const handleChat = (connectionId) =>{
+    const currentPath = location.pathname;
+   if (currentPath.includes(`/chat/`)) {
+    navigate(`/connections/chat/${connectionId}`);
+  } else {
+    const newPath = `${currentPath.endsWith("/") ? currentPath : currentPath + "/"}chat/${connectionId}`;
+    navigate(newPath);
+  }
+  }
  
   if (isLoading) {
     return (
@@ -165,9 +178,20 @@ const Connections = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
                             d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Connected
+                        Email
+                      </button>
+                      <button 
+                        onClick={() => handleChat(_id)}
+                        className={`bg-teal-500 text-white mt-2 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300 hover:bg-teal-600 flex items-center ${isExpanded ? 'bg-teal-600' : ''}`}
+                      >
+                        <svg className="w-4 h-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                            d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Chat
                       </button>
                     </div>
+                    
                   </div>
                   
                   {/* About Section */}

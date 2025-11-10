@@ -16,6 +16,7 @@ import Video from "./components/Video";
 import AboutUs from "./components/About";
 import Footer from "./components/Footer";
 import ContactUs from "./components/Contact";
+import RealChat from "./components/RealChat";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="videos" element={<Video />} />
             <Route path="connections" element={<Connections />} />
+            <Route path="connections/chat/:connectionId" element={<RealChat />} />
             <Route path="requests" element={<Requests />} />
             <Route path="pickuprequest" element={<PickupRequests />} />
             <Route path="about" element={<AboutUs />} />
