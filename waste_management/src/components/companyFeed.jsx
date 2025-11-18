@@ -13,32 +13,38 @@ const CompanyFeed = () => {
     const [allRequests, setAllRequests] = useState([]);
     const [rangeDays, setRangeDays] = useState(14);
     const [offsetDays, setOffsetDays] = useState(0); // 0=today anchored, positive moves window into the past
+    const [companyMeta, setCompanyMeta] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try{
                 const res = await axios.get(BASE_URL + "/company/feed", { withCredentials: true });
-                // Backend currently returns shape:
-                // { data: <number totalPickupRequests>, pendingPickupRequests, acceptedPickupRequests, rejectedPickupRequests, pickedUpPickupRequests, diyVideos }
-                const api = res?.data || {};
+                const payload = res?.data || {};
+                const analytics = payload.analytics || payload;
                 const normalized = {
-                    totalPickupRequests: api.totalPickupRequests ?? 0,
-                    pendingPickupRequests: api.pendingPickupRequests ?? 0,
-                    acceptedPickupRequests: api.acceptedPickupRequests ?? 0,
-                    rejectedPickupRequests: api.rejectedPickupRequests ?? 0,
-                    pickedUpPickupRequests: api.pickedUpPickupRequests ?? 0,
-                    diyVideos: api.diyVideos ?? 0,
+                    totalPickupRequests: analytics.totalPickupRequests ?? 0,
+                    pendingPickupRequests: analytics.pendingPickupRequests ?? 0,
+                    acceptedPickupRequests: analytics.acceptedPickupRequests ?? 0,
+                    rejectedPickupRequests: analytics.rejectedPickupRequests ?? 0,
+                    pickedUpPickupRequests: analytics.pickedUpPickupRequests ?? 0,
+                    diyVideos: analytics.diyVideos ?? 0,
                 };
                 setData(normalized);
+                setCompanyMeta(payload.company || null);
                 setError("");
 
-                // Build time-series trend from recent company pickup requests (last 14 days)
-                try {
-                    const listRes = await axios.get(BASE_URL + "/pickup/company/requests/pickup", { withCredentials: true });
-                    const list = Array.isArray(listRes?.data?.data) ? listRes.data.data : [];
-                    setAllRequests(list);
-                } catch (_) {
-                    setAllRequests([]);
+                const embeddedRequests = Array.isArray(payload.recentRequests) ? payload.recentRequests : null;
+                if (embeddedRequests) {
+                    setAllRequests(embeddedRequests);
+                } else {
+                    // Fallback for older backend versions
+                    try {
+                        const listRes = await axios.get(BASE_URL + "/pickup/company/requests/pickup", { withCredentials: true });
+                        const list = Array.isArray(listRes?.data?.data) ? listRes.data.data : [];
+                        setAllRequests(list);
+                    } catch (_) {
+                        setAllRequests([]);
+                    }
                 }
             }
             catch(err){
@@ -130,8 +136,24 @@ const CompanyFeed = () => {
                 <div className="bg-gradient-to-r from-teal-600 to-green-500 rounded-2xl shadow-lg overflow-hidden mb-8">
                     <div className="px-8 py-12 md:flex items-center justify-between">
                         <div className="md:w-2/3 mb-6 md:mb-0">
-                            <h1 className="text-3xl md:text-4xl font-bold text-white">Company Analytics</h1>
-                            <p className="mt-3 text-teal-50 text-lg">Track requests and your DIY contributions.</p>
+                            <h1 className="text-3xl md:text-4xl font-bold text-white">
+                                {companyMeta?.companyName || "Company Analytics"}
+                            </h1>
+                            <p className="mt-3 text-teal-50 text-lg">
+                                Track requests and outcomes for {companyMeta?.companyName ? "your organisation only" : "your organisation"}.
+                            </p>
+                            {companyMeta && (
+                                <div className="mt-4  grid grid-cols-1 sm:grid-cols-2 gap-3 text-teal-600 text-sm">
+                                    <div className="bg-white bg-opacity-15 rounded-lg px-4 py-3">
+                                        <p className="uppercase text-xs tracking-widest opacity-80">Waste Type</p>
+                                        <p className=" text-lg font-semibold">{companyMeta.wasteType || "N/A"}</p>
+                                    </div>
+                                    <div className="bg-white bg-opacity-15 rounded-lg px-4 py-3">
+                                        <p className="uppercase text-xs tracking-widest opacity-80">Location</p>
+                                        <p className="text-lg font-semibold">{companyMeta.location || "Not specified"}</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <div className="md:w-1/3 flex justify-end">
                             <a href="/pickuprequest" className="bg-white text-teal-600 hover:bg-teal-50 shadow-md font-medium px-5 py-3 rounded-lg transition-all duration-300 flex items-center">

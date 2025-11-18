@@ -17,6 +17,7 @@ import AboutUs from "./components/About";
 import Footer from "./components/Footer";
 import ContactUs from "./components/Contact";
 import RealChat from "./components/RealChat";
+import Transactions from "./components/Transactions";
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
             <Route path="connections/chat/:connectionId" element={<RealChat />} />
             <Route path="requests" element={<Requests />} />
             <Route path="pickuprequest" element={<PickupRequests />} />
+            <Route path="transactions" element={<Transactions />} />
             <Route path="about" element={<AboutUs />} />
             <Route path="contact" element={<ContactUs />} />
           </Route>

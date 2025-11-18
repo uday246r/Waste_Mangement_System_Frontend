@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { BASE_URL } from '../utils/constants';
 import { addPickupRequest, updatePickupRequestStatus } from '../utils/pickupSlice';
+import Payment from './Payment';
+import CompanyPaymentAccount from './CompanyPaymentAccount';
 
 const PickupRequests = () => {
     const pickupRequests = useSelector((store) => store.pickup.pickupRequests);
@@ -10,6 +12,14 @@ const PickupRequests = () => {
     const dispatch = useDispatch();
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'pending' | 'accepted' | 'picked-up'
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [selectedRequestId, setSelectedRequestId] = useState(null);
+    const [paymentData, setPaymentData] = useState({ accountNumber: '', upiId: '', amount: '' });
+    const [pendingPayments, setPendingPayments] = useState([]);
+    const [userPayments, setUserPayments] = useState([]);
+    const [showPaymentComponent, setShowPaymentComponent] = useState(false);
+    const [selectedPayment, setSelectedPayment] = useState(null);
+    const [showPaymentAccountSetup, setShowPaymentAccountSetup] = useState(false);
 
     const isCompany = user?.role === 'company';
 
@@ -26,17 +36,76 @@ const PickupRequests = () => {
         }
     };
 
-    const markAsPickedUp = async (_id) => {
+    const markAsPickedUp = async (_id, wasteAmount, wasteWeight) => {
         try {
             await axios.post(
                 BASE_URL + "/pickup/mark-picked-up/" + _id,
-                {},
+                { wasteAmount, wasteWeight },
                 { withCredentials: true }
             );
             dispatch(updatePickupRequestStatus({ requestId: _id, status: "picked-up" }));
         } catch (err) {
             console.error("Failed to mark request as picked up:", err);
         }
+    };
+
+    const fetchUserPayments = async () => {
+        if (isCompany) return;
+        try {
+            const res = await axios.get(BASE_URL + "/payment/user/transactions", {
+                withCredentials: true
+            });
+            setUserPayments(res.data.data || []);
+        } catch (err) {
+            console.error("Failed to fetch user payments:", err);
+        }
+    };
+
+    const requestPayment = async () => {
+        try {
+            await axios.post(
+                BASE_URL + "/payment/request-payment/" + selectedRequestId,
+                paymentData,
+                { withCredentials: true }
+            );
+            setShowPaymentModal(false);
+            setPaymentData({ accountNumber: '', upiId: '', amount: '' });
+            fetchPickupRequests();
+            fetchUserPayments();
+            alert("Payment request submitted successfully!");
+        } catch (err) {
+            console.error("Failed to request payment:", err);
+            alert("Failed to request payment: " + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const openPaymentModal = (requestId) => {
+        setSelectedRequestId(requestId);
+        setShowPaymentModal(true);
+    };
+
+    const fetchPendingPayments = async () => {
+        if (!isCompany) return;
+        try {
+            const res = await axios.get(BASE_URL + "/payment/company/pending-payments", {
+                withCredentials: true
+            });
+            setPendingPayments(res.data.data || []);
+        } catch (err) {
+            console.error("Failed to fetch pending payments:", err);
+        }
+    };
+
+    const openPaymentDialog = (payment) => {
+        setSelectedPayment(payment);
+        setShowPaymentComponent(true);
+    };
+
+    const handlePaymentSuccess = () => {
+        setShowPaymentComponent(false);
+        setSelectedPayment(null);
+        fetchPendingPayments();
+        fetchPickupRequests();
     };
 
     const fetchPickupRequests = async () => {
@@ -59,11 +128,21 @@ const PickupRequests = () => {
             console.error("Failed to fetch pickup requests:", err);
         } finally {
             setTimeout(() => setLoading(false), 800); // Slight delay for better UX
+            if (isCompany) {
+                fetchPendingPayments();
+            } else {
+                fetchUserPayments();
+            }
         }
     };
 
     useEffect(() => {
         fetchPickupRequests();
+        if (isCompany) {
+            fetchPendingPayments();
+        } else {
+            fetchUserPayments();
+        }
     }, [isCompany]);
 
     // Helper function to render status badge with appropriate styles
@@ -102,6 +181,14 @@ const PickupRequests = () => {
                 {statusText}
             </span>
         );
+    };
+
+    const findPaymentForRequest = (requestId) => {
+        if (!requestId) return null;
+        return userPayments.find(payment => {
+            const pickupId = payment.pickupRequestId?._id || payment.pickupRequestId;
+            return pickupId?.toString() === requestId?.toString();
+        }) || null;
     };
 
     // Apply filter and sorting (pending first)
@@ -146,7 +233,19 @@ const PickupRequests = () => {
                                     "Track the status of your waste collection requests."}
                             </p>
                         </div>
-                        <div className="md:w-1/3 flex justify-end">
+                        <div className="md:w-1/3 flex justify-end gap-3">
+                            {isCompany && (
+                                <button 
+                                    onClick={() => setShowPaymentAccountSetup(true)}
+                                    className="bg-white text-teal-600 hover:bg-teal-50 shadow-md font-medium px-5 py-3 rounded-lg transition-all duration-300 flex items-center"
+                                >
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    Payment Account
+                                </button>
+                            )}
                             <button 
                                 onClick={fetchPickupRequests}
                                 className="bg-white text-teal-600 hover:bg-teal-50 shadow-md font-medium px-5 py-3 rounded-lg transition-all duration-300 flex items-center"
@@ -325,19 +424,52 @@ const PickupRequests = () => {
                                         
                                         {/* Pickup Info Section - Only visible for picked-up requests */}
                                         {status === "picked-up" && (
-                                            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                                <div className="flex items-start">
-                                                    <svg className="w-5 h-5 text-blue-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    <div>
-                                                        <h3 className="text-sm font-semibold text-blue-800">Waste Pickup Completed</h3>
-                                                        <p className="text-xs text-blue-600 mt-1">
-                                                            The user has confirmed that the waste has been successfully picked up.
-                                                        </p>
+                                            <div className="mt-4 space-y-3">
+                                                <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                                    <div className="flex items-start">
+                                                        <svg className="w-5 h-5 text-blue-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        <div className="flex-1">
+                                                            <h3 className="text-sm font-semibold text-blue-800">Waste Pickup Completed</h3>
+                                                            <p className="text-xs text-blue-600 mt-1">
+                                                                The user has confirmed that the waste has been successfully picked up.
+                                                            </p>
+                                                            {request.wasteAmount && (
+                                                                <p className="text-xs text-blue-700 mt-2 font-medium">
+                                                                    Amount: ₹{request.wasteAmount}
+                                                                </p>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                
+                                                {/* Show pending payment if exists */}
+                                                {pendingPayments.find(p => p.pickupRequestId?._id === requestId || p.pickupRequestId === requestId) && (
+                                                    <div className="p-3 bg-green-50 rounded-lg border border-green-100">
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <h3 className="text-sm font-semibold text-green-800">Payment Request Pending</h3>
+                                                                <p className="text-xs text-green-600 mt-1">
+                                                                    Amount: ₹{pendingPayments.find(p => p.pickupRequestId?._id === requestId || p.pickupRequestId === requestId)?.amount}
+                                                                </p>
+                                                                {pendingPayments.find(p => p.pickupRequestId?._id === requestId || p.pickupRequestId === requestId)?.upiId && (
+                                                                    <p className="text-xs text-green-600">UPI: {pendingPayments.find(p => p.pickupRequestId?._id === requestId || p.pickupRequestId === requestId)?.upiId}</p>
+                                                                )}
+                                                                {pendingPayments.find(p => p.pickupRequestId?._id === requestId || p.pickupRequestId === requestId)?.accountNumber && (
+                                                                    <p className="text-xs text-green-600">Account: {pendingPayments.find(p => p.pickupRequestId?._id === requestId || p.pickupRequestId === requestId)?.accountNumber}</p>
+                                                                )}
+                                                            </div>
+                                                            <button
+                                                                onClick={() => openPaymentDialog(pendingPayments.find(p => p.pickupRequestId?._id === requestId || p.pickupRequestId === requestId))}
+                                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm"
+                                                            >
+                                                                Pay Now
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -348,10 +480,12 @@ const PickupRequests = () => {
                             const company = request.toCompanyId || {};
                             const { companyName = '', photoUrl = '', about = '', emailId = '' } = company;
 
-                            if (!company._id) {
+                        if (!company._id) {
                                 console.warn("Skipping malformed request:", request);
                                 return null;
                             }
+
+                            const paymentForRequest = findPaymentForRequest(requestId);
 
                             return (
                                 <div key={requestId} className="bg-white rounded-xl shadow-md overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
@@ -433,7 +567,13 @@ const PickupRequests = () => {
                                                         
                                                         {/* Mark as Picked Up Button */}
                                                         <button 
-                                                            onClick={() => markAsPickedUp(requestId)}
+                                                            onClick={() => {
+                                                                const amount = prompt("Enter waste amount (in ₹):");
+                                                                const weight = prompt("Enter waste weight (in kg):");
+                                                                if (amount) {
+                                                                    markAsPickedUp(requestId, parseFloat(amount), weight ? parseFloat(weight) : null);
+                                                                }
+                                                            }}
                                                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:shadow-md transition-all duration-300 flex items-center justify-center"
                                                         >
                                                             <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -446,12 +586,60 @@ const PickupRequests = () => {
                                                 )}
                                                 
                                                 {status === "picked-up" && (
-                                                    <div className="px-4 py-3 bg-blue-50 rounded-lg border border-blue-100 text-center">
-                                                        <svg className="w-6 h-6 text-blue-500 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                        </svg>
-                                                        <p className="text-sm font-medium text-blue-800">Pickup Complete</p>
+                                                    <div className="flex flex-col space-y-3">
+                                                        <div className="px-4 py-3 bg-blue-50 rounded-lg border border-blue-100 text-center">
+                                                            <svg className="w-6 h-6 text-blue-500 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                            <p className="text-sm font-medium text-blue-800">Pickup Complete</p>
+                                                        </div>
+                                                        {paymentForRequest ? (
+                                                            <div className={`px-4 py-3 rounded-lg border text-sm ${
+                                                                paymentForRequest.status === "completed"
+                                                                    ? "bg-green-50 border-green-100 text-green-700"
+                                                                    : paymentForRequest.status === "failed"
+                                                                    ? "bg-red-50 border-red-100 text-red-700"
+                                                                    : "bg-yellow-50 border-yellow-100 text-yellow-700"
+                                                            }`}>
+                                                                {paymentForRequest.status === "completed" && (
+                                                                    <div className="flex items-center">
+                                                                        <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                                                        </svg>
+                                                                        <span>Payment received successfully.</span>
+                                                                    </div>
+                                                                )}
+                                                                {paymentForRequest.status === "failed" && (
+                                                                    <div className="flex items-center">
+                                                                        <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                                                        </svg>
+                                                                        <span>Payment failed. Please contact the company.</span>
+                                                                    </div>
+                                                                )}
+                                                                {["pending", "processing"].includes(paymentForRequest.status) && (
+                                                                    <div className="flex items-center">
+                                                                        <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                                                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                        </svg>
+                                                                        <span>Payment requested. Awaiting company transfer.</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => openPaymentModal(requestId)}
+                                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                                                            >
+                                                                <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                                </svg>
+                                                                Request Payment
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
@@ -485,6 +673,91 @@ const PickupRequests = () => {
                     End of requests • {pickupRequests.length} {pickupRequests.length === 1 ? 'request' : 'requests'} shown
                 </div>
             </div>
+
+            {/* Payment Request Modal */}
+            {showPaymentModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 text-teal-600">
+                        <h2 className="text-xl font-bold text-teal-800 mb-4">Request Payment</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-teal-600 mb-1">Amount (₹)</label>
+                                <input
+                                    type="number"
+                                    value={paymentData.amount}
+                                    onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-teal-600"
+                                    placeholder="Enter amount"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-teal-600 mb-1">Account Number (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={paymentData.accountNumber}
+                                    onChange={(e) => setPaymentData({ ...paymentData, accountNumber: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-teal-600"
+                                    placeholder="Enter account number"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-teal-600 mb-1">UPI ID (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={paymentData.upiId}
+                                    onChange={(e) => setPaymentData({ ...paymentData, upiId: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-teal-600"
+                                    placeholder="Enter UPI ID"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex space-x-3 mt-6">
+                            <button
+                                onClick={() => {
+                                    setShowPaymentModal(false);
+                                    setPaymentData({ accountNumber: '', upiId: '', amount: '' });
+                                }}
+                                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={requestPayment}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-teal-600 to-green-500 text-white rounded-lg hover:shadow-md transition-all"
+                            >
+                                Submit Request
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Payment Component */}
+            {showPaymentComponent && selectedPayment && (
+                <Payment
+                    paymentId={selectedPayment._id}
+                    amount={selectedPayment.amount}
+                    userAccountNumber={selectedPayment.accountNumber}
+                    userUpiId={selectedPayment.upiId}
+                    onSuccess={handlePaymentSuccess}
+                    onClose={() => {
+                        setShowPaymentComponent(false);
+                        setSelectedPayment(null);
+                    }}
+                />
+            )}
+
+            {/* Company Payment Account Setup */}
+            {showPaymentAccountSetup && (
+                <CompanyPaymentAccount
+                    onClose={() => setShowPaymentAccountSetup(false)}
+                    onSuccess={() => {
+                        setShowPaymentAccountSetup(false);
+                        fetchPickupRequests();
+                    }}
+                />
+            )}
         </div>
     );
 };
