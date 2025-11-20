@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BASE_URL } from '../utils/constants';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { removeFromFeed } from '../utils/feedSlice';
 
 const Video = () => {
@@ -17,16 +18,31 @@ const Video = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [likedVideos, setLikedVideos] = useState({});
   const videosPerPage = 6;
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const currentUser = useSelector((state) => state.user);
+  const currentUserId = currentUser?._id ? currentUser._id.toString() : null;
 
   // Function to fetch videos from the backend
   const fetchVideos = async () => {
     try {
       setLoading(true);
       const res = await axios.get(`${BASE_URL}/videos`, { withCredentials: true });
-      console.log('Fetched Videos:', res?.data?.videos);
-      setVideoList(res?.data?.videos || []);
+      const fetchedVideos = (res?.data?.videos || []).map((video) => {
+        const likesArray = video.likes || [];
+        const likesCount =
+          typeof video.likesCount === 'number' ? video.likesCount : likesArray.length;
+
+        return {
+          ...video,
+          likes: likesArray,
+          likesCount,
+          isFriend: isFriendStatus(video.requestStatus),
+        };
+      });
+      setVideoList(fetchedVideos);
     } catch (err) {
       console.error('Error fetching videos', err);
       setError('Failed to load videos. Please try again.');
@@ -80,12 +96,91 @@ const Video = () => {
     return match && match[1]; // Returns the video ID if match is found
   };
 
+  const getVideoKey = (video, fallbackIndex = 0) =>
+    video?._id || video?.id || video?.youtubeUrl || `video-${fallbackIndex}`;
+
+  useEffect(() => {
+    if (!videoList.length) {
+      setLikedVideos({});
+      return;
+    }
+
+    setLikedVideos(() => {
+      const nextLikesState = {};
+
+      videoList.forEach((video, index) => {
+        const key = getVideoKey(video, index);
+        const likesArray = video.likes || [];
+        const normalizedUserId = currentUserId;
+        nextLikesState[key] = normalizedUserId
+          ? likesArray.some((id) =>
+              (id && id.toString ? id.toString() : id) === normalizedUserId
+            )
+          : false;
+      });
+
+      return nextLikesState;
+    });
+  }, [videoList, currentUserId]);
+
+  // determine if current request status indicates a friendship
+  const isFriendStatus = (status) =>
+    ['friends', 'accepted', 'connected', 'approved'].includes(status);
+
   // Custom toast notification function
   const showNotification = (message, type = 'success') => {
     setToastMessage(message);
     setToastType(type);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const handleLikeToggle = async (video) => {
+    const videoId = video?._id;
+    if (!videoId) {
+      showNotification('Unable to like this video', 'error');
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        `${BASE_URL}/videos/${videoId}/like`,
+        {},
+        { withCredentials: true }
+      );
+
+      const { liked, likesCount, likes } = res.data;
+      const videoKey = getVideoKey(video);
+
+      setLikedVideos((prev) => ({
+        ...prev,
+        [videoKey]: liked,
+      }));
+
+      setVideoList((prevList) =>
+        prevList.map((item) =>
+          item._id === videoId
+            ? {
+                ...item,
+                likesCount: typeof likesCount === 'number' ? likesCount : item.likesCount,
+                likes: Array.isArray(likes) ? likes : item.likes,
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      const errorMsg = err?.response?.data?.message || 'Failed to update like';
+      showNotification(errorMsg, 'error');
+    }
+  };
+
+  const handleChat = (userId) => {
+    if (!userId) {
+      showNotification('Unable to open chat for this user', 'error');
+      return;
+    }
+
+    navigate(`/connections/chat/${userId}`);
   };
 
   // Handle "Interested" or "Ignore" actions
@@ -100,6 +195,7 @@ const Video = () => {
       // Handle the response based on the request's status
       if (res.data.status === 'accepted') {
         showNotification('You are already friends!', 'info');
+        updateVideoListWithStatus(userId, 'friends', { isFriend: true });
         return;
       } else if (res.data.status === 'ignored') {
         showNotification('You have ignored this request.', 'info');
@@ -130,13 +226,27 @@ const Video = () => {
   };
 
   // Update the video list based on the request status
-  const updateVideoListWithStatus = (userId, status) => {
+  const updateVideoListWithStatus = (userId, status, extraUpdates = {}) => {
     setVideoList((prevList) =>
-      prevList.map((video) =>
-        video.userId._id === userId
-          ? { ...video, requestStatus: status } 
-          : video
-      )
+      prevList.map((video) => {
+        const videoUserId = video?.userId?._id;
+        if (!videoUserId) return video;
+
+        const normalizedVideoUserId =
+          typeof videoUserId === 'object' && videoUserId.toString
+            ? videoUserId.toString()
+            : videoUserId;
+        const normalizedUserId =
+          typeof userId === 'object' && userId.toString ? userId.toString() : userId;
+
+        if (normalizedVideoUserId !== normalizedUserId) return video;
+
+        return {
+          ...video,
+          requestStatus: status,
+          ...extraUpdates,
+        };
+      })
     );
   };
 
@@ -348,8 +458,22 @@ const Video = () => {
         {/* Video Grid */}
         {videoList.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {currentVideos.map((video, idx) => (
-              <div key={idx} className="bg-white rounded-xl shadow-md overflow-hidden transform hover:scale-102 hover:shadow-lg transition-all duration-300">
+            {currentVideos.map((video, idx) => {
+              const videoKey = getVideoKey(video, idx);
+              const isLiked = !!likedVideos[videoKey];
+              const alreadyFriends = !!video.isFriend;
+              const likesCount =
+                typeof video.likesCount === 'number'
+                  ? video.likesCount
+                  : (video.likes || []).length;
+              const authorId =
+                video?.userId?._id && typeof video.userId._id === 'object'
+                  ? video.userId._id.toString()
+                  : video?.userId?._id || '';
+              const isOwnVideo = currentUserId && authorId === currentUserId;
+
+              return (
+                <div key={videoKey} className="bg-white rounded-xl shadow-md overflow-hidden transform hover:scale-102 hover:shadow-lg transition-all duration-300">
                 <div className="aspect-video">
                   <iframe
                     className="w-full h-full"
@@ -362,25 +486,69 @@ const Video = () => {
                 <div className="p-5">
                   <h4 className="text-lg font-bold text-gray-800 mb-2 line-clamp-1">{video.title}</h4>
                   <p className="text-sm text-gray-600 mb-4 line-clamp-2">{video.description}</p>
-                  <div className="flex items-center mb-4">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-r from-teal-400 to-green-400 flex items-center justify-center text-white font-bold mr-3">
-                      {video.userId.firstName.charAt(0)}{video.userId.lastName.charAt(0)}
+                  <div className="flex items-center flex-wrap gap-2 mb-4">
+                    <div className="flex items-center mr-3">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-r from-teal-400 to-green-400 flex items-center justify-center text-white font-bold mr-3">
+                        {video.userId.firstName.charAt(0)}{video.userId.lastName.charAt(0)}
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">
+                        {video.userId.firstName} {video.userId.lastName}
+                      </span>
                     </div>
-                    <span className="text-sm font-medium text-gray-700">
-                      {video.userId.firstName} {video.userId.lastName}
-                    </span>
+                    <div className="ml-auto">
+                      <button
+                        className={`px-3 py-2 rounded-lg border transition-all duration-300 flex items-center shadow-sm ${
+                          isLiked
+                            ? 'bg-pink-50 text-pink-600 border-pink-200'
+                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                        }`}
+                        onClick={() => handleLikeToggle(video)}
+                      >
+                        <svg
+                          className={`w-4 h-4 mr-1 ${
+                            isLiked ? 'text-pink-500 fill-current' : ''
+                          }`}
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          fill="none"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                          />
+                        </svg>
+                        {likesCount} {likesCount === 1 ? 'Like' : 'Likes'}
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="mt-2">
-                    {video.requestStatus === 'friends' ? (
-                      <div className="flex items-center text-green-600 bg-green-50 py-2 px-3 rounded-lg">
-                        <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span className="font-medium">Connected</span>
-                      </div>
-                    ) : (
-                      <div className="flex space-x-2">
+                    <div className="flex flex-wrap gap-2 w-full">
+                      {isOwnVideo ? (
+                        <div className="flex-1 flex items-center justify-center text-white bg-gradient-to-r from-teal-500 to-green-500 py-2 px-3 rounded-lg shadow-md">
+                          <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c-4 0-7 2-7 4v1c0 .552.448 1 1 1h12c.552 0 1-.448 1-1v-1c0-2-3-4-7-4z"
+                            />
+                          </svg>
+                          <span className="font-medium tracking-wide">Your video</span>
+                        </div>
+                      ) : alreadyFriends ? (
+                        <button
+                          className="px-4 py-2 bg-white text-teal-600 border border-teal-200 hover:bg-teal-50 rounded-lg transition-all duration-300 flex-1 flex items-center justify-center shadow-sm font-medium"
+                          onClick={() => handleChat(video.userId._id)}
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 1.657-1.79 3-4 3-.447 0-.875-.074-1.268-.21L12 17l-1.732-1.21A4.862 4.862 0 019 15c-2.21 0-4-1.343-4-3s1.79-3 4-3h8c2.21 0 4 1.343 4 3z" />
+                          </svg>
+                          Chat
+                        </button>
+                      ) : (
                         <button
                           className="px-4 py-2 bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600 text-white rounded-lg transition-all duration-300 flex-1 flex items-center justify-center shadow-sm"
                           onClick={() => handleInterest('interested', video.userId._id)}
@@ -390,21 +558,13 @@ const Video = () => {
                           </svg>
                           Connect
                         </button>
-                        {/* <button
-                          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-300 flex-1 flex items-center justify-center shadow-sm"
-                          onClick={() => handleInterest('ignored', video.userId._id)}
-                        >
-                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                          Ignore
-                        </button> */}
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="bg-white bg-opacity-90 rounded-xl p-10 text-center shadow-md">

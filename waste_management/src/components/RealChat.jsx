@@ -16,12 +16,16 @@ const RealChat = () => {
     const messagesEndRef = useRef(null);
     const messagesLoadedRef = useRef(false);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = (smooth = false) => {
+        if (!messagesEndRef.current) return;
+        messagesEndRef.current.scrollIntoView({
+            behavior: smooth ? "smooth" : "instant",
+            block: "end",
+        });
     };
 
     useEffect(() => {
-        scrollToBottom();
+        scrollToBottom(true);
     }, [messages]);
 
     // Handle page unload (browser close, refresh, navigation)
@@ -77,6 +81,10 @@ const RealChat = () => {
         if(userId && connectionId) {
             fetchMessages();
         }
+
+        return () => {
+            messagesLoadedRef.current = false;
+        };
     }, [userId, connectionId]);
 
     useEffect(()=>{
@@ -165,6 +173,7 @@ const RealChat = () => {
                     timestamp: currentTime
                 }];
             });
+            scrollToBottom(true);
         });
 
         socket.on("userJoined", ({userId: joinedUserId, firstName: joinedFirstName}) => {
@@ -244,6 +253,7 @@ const RealChat = () => {
             text: newMessage,
         });
         setNewMessage("");
+        setTimeout(() => scrollToBottom(true), 50);
     }
 
     const handleKeyPress = (e) => {
