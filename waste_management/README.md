@@ -1,5 +1,7 @@
 # Waste Management Frontend (Vite + React)
 
+Deployed Link: https:wmss-eta.vercel.app
+
 ## Environment Setup
 
 1. Duplicate `example.env` and rename it to `.env`.
