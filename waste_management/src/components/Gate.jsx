@@ -24,7 +24,6 @@ const Gate = () => {
         setLoading(false);
       })
       .catch(() => {
-        setError("Failed to fetch gate password");
         setLoading(false);
       });
   }, []);
@@ -131,7 +130,7 @@ const Gate = () => {
             />
           </div>
 
-          {error && (
+        {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
               <p className="text-red-700 text-sm">{error}</p>
             </div>

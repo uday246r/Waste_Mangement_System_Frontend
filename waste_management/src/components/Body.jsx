@@ -30,7 +30,7 @@ const Body = () => {
           dispatch(addCompany(res.data));
         } catch (companyErr) {
           console.error("Not logged in as user or company");
-          navigate("/login");
+          navigate("/gate", { replace: true });
         }
       }
     };
