@@ -3,6 +3,8 @@ import NavBar from "./components/NavBar";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Body from "./components/Body";
 import Login from "./components/Login";
+import Gate from "./components/Gate";
+import GateGuard from "./components/GateGuard";
 import Profile from "./components/Profile";
 import { Provider } from "react-redux";
 import appStore from "./utils/appStore";
@@ -24,10 +26,11 @@ function App() {
     <Provider store={appStore}>
       <BrowserRouter basename="/">
         <Routes>
+          <Route path="/gate" element={<Gate />} />
           <Route path="/" element={<Body />}>
             <Route index element={<Home />} />
             {/* <Route path="companies" element={<CompanyFeed />} /> */}
-            <Route path="login" element={<Login />} />
+            <Route path="login" element={<GateGuard><Login /></GateGuard>} />
             <Route path="profile" element={<Profile />} />
             <Route path="videos" element={<Video />} />
             <Route path="connections" element={<Connections />} />
